@@ -2,6 +2,8 @@ README.md
 setup.py
 chupochess/__init__.py
 chupochess/functions.py
+chupochess/game.py
+chupochess/pieces.py
 chupochess.egg-info/PKG-INFO
 chupochess.egg-info/SOURCES.txt
 chupochess.egg-info/dependency_links.txt
