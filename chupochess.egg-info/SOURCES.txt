@@ -1,0 +1,8 @@
+README.md
+setup.py
+chupochess/__init__.py
+chupochess/functions.py
+chupochess.egg-info/PKG-INFO
+chupochess.egg-info/SOURCES.txt
+chupochess.egg-info/dependency_links.txt
+chupochess.egg-info/top_level.txt
