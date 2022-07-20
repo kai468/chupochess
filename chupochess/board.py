@@ -58,7 +58,7 @@ class Board:
                 currentFile.append(Square(currentColor, Location(rank, File(file))))
             self.boardSquares.append(currentFile)
 
-    def printBoard(self) -> str:
+    def __str__(self) -> str:
         # TODO: what would I use that function for? no information about pieces located on the board
         s = ""
         for file in range(8):
@@ -66,7 +66,6 @@ class Board:
                 s += str(self.boardSquares[file][rank])
             s+="\n"
         return s
-
             
 
 
