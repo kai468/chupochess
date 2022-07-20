@@ -1,15 +1,16 @@
 
-from chupochess.game import game
-from chupochess.pieces import king
+from chupochess.game import Game
+from chupochess.pieces import King
+from chupochess.board import Board
 
 
 def penis(inp: int):
-    x = game()
+    game = Game()
     s = ""
     for i in range(inp):
-        s += x.data
+        s += game.data
     return s
 
 def inher(color: str):
-    x = king(color)
-    return x.print_color()
+    king = King(color)
+    return king.print_color()

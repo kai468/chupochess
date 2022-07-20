@@ -1,4 +1,4 @@
-class piece:
+class Piece:
     def __init__(self, color):
         self.color = color
 
@@ -6,26 +6,26 @@ class piece:
         return self.color
 
 
-class king(piece):
+class King(Piece):
     def __init__(self, color):
-        piece.__init__(self, color)
+        Piece.__init__(self, color)
 
-class queen(piece):
+class Queen(Piece):
     def __init__(self, color):
-        piece.__init__(self, color)
+        Piece.__init__(self, color)
 
-class bishop(piece):
+class Bishop(Piece):
     def __init__(self, color):
-        piece.__init__(self, color)
+        Piece.__init__(self, color)
 
-class knight(piece):
+class Knight(Piece):
     def __init__(self, color):
-        piece.__init__(self, color)
+        Piece.__init__(self, color)
 
-class rook(piece):
+class Rook(Piece):
     def __init__(self, color):
-        piece.__init__(self, color)
+        Piece.__init__(self, color)
 
-class pawn(piece):
+class Pawn(Piece):
     def __init__(self, color):
-        piece.__init__(self, color)
+        Piece.__init__(self, color)

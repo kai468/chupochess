@@ -1,6 +1,7 @@
 README.md
 setup.py
 chupochess/__init__.py
+chupochess/board.py
 chupochess/functions.py
 chupochess/game.py
 chupochess/pieces.py
