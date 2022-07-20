@@ -1,5 +1,5 @@
 from chupochess.board import Board
-from chupochess.pieces import Pawn, PieceColor, Piece, Queen
+from chupochess.pieces import MovableInterface, Pawn, PieceColor, Piece, Queen
 
 class Game:
     def __init__(self):
@@ -14,7 +14,7 @@ class Game:
         self.printPiece(queen)
         #print(self.board)
 
-    def printPiece(self, piece: Piece):
-        print(str(piece))
+    def printPiece(self, piece: MovableInterface):
+        print(str(piece.getValidMoves(None)))
 
     
