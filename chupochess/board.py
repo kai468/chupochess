@@ -1,61 +1,30 @@
-from enum import Enum
-
-class File(Enum):
-    A = 0
-    B = 1
-    C = 2
-    D = 3
-    E = 4
-    F = 5
-    G = 6
-    H = 7
-
-class Location:
-    def __init__(self, rank: int, file: File) -> None:
-        self.rank = rank
-        self.file = file
-
-    def __key(self):
-        return (self.rank, self.file)
-
-    def __hash__(self) -> int:
-        return hash(self.__key)
-        
-    def __eq__(self, __o: object) -> bool:
-        if isinstance(__o, Location):
-            return self.__key() == __o.__key()
-        else:
-            return NotImplemented
-
-    def __str__(self) -> str:
-        return str(self.file.name) + str(self.rank+1)
-
-class SquareColor(Enum):
-    LIGHT = 0
-    DARK = 1
-
-class Square:
-    def __init__(self, squareColor: SquareColor, location: Location) -> None:
-        self.squareColor = squareColor
-        self.location = location
-        self.isOccupied = False
-
-    def reset(self) -> None:
-        self.isOccupied = False
-
-    def __str__(self) -> str:
-        return "Square{squareColor=" + str(self.squareColor.name) \
-            + ",location=" + str(self.location) \
-            + ",isOccupied=" + str(self.isOccupied) + "}"
+from chupochess.common import Location, SquareColor, File, PieceColor, LocationDictionary
+from chupochess.squares import Square
 
 class Board:
     def __init__(self) -> None:
+        from chupochess.pieces import PieceFactory
         self.boardSquares = []
+        self.locationSquareMap = LocationDictionary()
+        self.whitePieces = []
+        self.blackPieces = []
+        pieces = PieceFactory.getPieces()
         for file in range(8):
             currentFile = []
             for rank in range(8):
                 currentColor = SquareColor(1) if ((file + rank)%2) == 0 else SquareColor(0)
-                currentFile.append(Square(currentColor, Location(rank, File(file))))
+                newSquare = Square(currentColor, Location(rank, File(file)))
+                if newSquare.location in pieces:
+                    piece = pieces[newSquare.location]
+                    newSquare.isOccupied = True
+                    newSquare.currentPiece = piece
+                    piece.currentSquare = newSquare
+                    if piece.color == PieceColor.BLACK:
+                        self.blackPieces.append(piece)
+                    else:
+                        self.whitePieces.append(piece)
+                self.locationSquareMap[newSquare.location] = newSquare
+                currentFile.append(newSquare)
             self.boardSquares.append(currentFile)
 
     def __str__(self) -> str:
@@ -66,7 +35,27 @@ class Board:
                 s += str(self.boardSquares[file][rank])
             s+="\n"
         return s
+
+    def printBoard(self) -> None:
+        PREFIX_WHITE = '\033[93m'
+        SUFFIX_WHITE = '\033[0m'
+        print("  A B C D E F G H   ")
+        sOut = ""
+        for rank in range(7,-1,-1):
+            sOut = str(rank + 1) + " "
+            for file in range(8):
+                if self.boardSquares[file][rank].isOccupied:
+                    piece = self.boardSquares[file][rank].currentPiece
+                    if piece.color == PieceColor.WHITE:
+                        sOut += PREFIX_WHITE + piece.name[0] + SUFFIX_WHITE + " "
+                    else:
+                        sOut += piece.name[0] + " "
+                else:
+                    sOut += "_ "
+            print(sOut + str(rank + 1))
+        print("  A B C D E F G H   ")
             
+
 
 
 

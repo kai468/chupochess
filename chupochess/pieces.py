@@ -1,92 +1,215 @@
-from enum import Enum
-import abc
+from itertools import filterfalse
 from typing import List
-from urllib.parse import _NetlocResultMixinStr
-
-from chupochess.board import Board, Location, Square
-
-class PieceColor(Enum):
-    WHITE = 0
-    BLACK = 1
+from chupochess.board import Board
+from chupochess.interfaces import MovableInterface
+from chupochess.common import PieceColor, Location, LocationFactory, File, LocationDictionary
+from chupochess.squares import Square
 
 class Piece:
     def __init__(self, color: PieceColor) -> None:
         self.color = color
         self.currentSquare = None
-        self.name = None        # TODO: why do I need a name? 
+        self.name = None        
     
     def __str__(self) -> str:
         return "Piece{name=" + str(self.name) \
             + ",currentSquare=" + str(self.currentSquare) \
             + ",color=" + str(self.color.name) + "}"
 
-# https://realpython.com/python-interface/#using-abstract-method-declaration
-# https://realpython.com/python-interface/#java
-# TODO: 
-class MovableInterface(metaclass=abc.ABCMeta):
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, 'getValidMoves') and 
-                callable(subclass.getValidMoves) and 
-                hasattr(subclass, 'makeMove') and 
-                callable(subclass.makeMove) or 
-                NotImplemented)
 
-    @abc.abstractmethod
+class King(Piece, MovableInterface):
+    def __init__(self, color: PieceColor) -> None:
+        Piece.__init__(self, color)
+        self.name = "K"
+        self.bishop = Bishop(color)
+        self.rook = Rook(color)
+
     def getValidMoves(self, board: Board) -> List[Location]:
-        raise NotImplementedError
+        moveCandidates = []
+        moveCandidates.extend(self.bishop.getValidMoves(board, self.currentSquare))     
+        moveCandidates.extend(self.rook.getValidMoves(board, self.currentSquare))      
+        # filter if abs() > 1:
+        moveCandidates[:] = filterfalse(lambda candidate : (abs(candidate.file.value - self.currentSquare.location.file.value) > 1) or (abs(candidate.rank - self.currentSquare.location.rank) > 1), moveCandidates)
+        # TODO: "in check" detection
+        return moveCandidates
 
-    @abc.abstractmethod
     def makeMove(self, square: Square) -> None:
-        raise NotImplementedError
+        # TODO: refactor makeMove (identical for all pieces but the Pawns)
+        self.currentSquare.reset()
+        self.currentSquare = square
+        square.currentPiece = self
+        square.isOccupied = True
 
-
-class King(Piece):
+class Queen(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
-        self.name = "King"
-
-class Queen(Piece):
-    def __init__(self, color: PieceColor) -> None:
-        Piece.__init__(self, color)
-        self.name = "Queen"
+        self.name = "Q"
+        self.bishop = Bishop(color)
+        self.rook = Rook(color)
 
     def getValidMoves(self, board: Board) -> List[Location]:
-        print(self.name + " -> getValidMoves()")
-        return None
-
+        moveCandidates = []
+        moveCandidates.extend(self.bishop.getValidMoves(board, self.currentSquare))  
+        moveCandidates.extend(self.rook.getValidMoves(board, self.currentSquare))   
+        return moveCandidates
     
     def makeMove(self, square: Square) -> None:
-        print(self.name + " -> makeMove()")
-        return None
+        self.currentSquare.reset()
+        self.currentSquare = square
+        square.currentPiece = self
+        square.isOccupied = True
 
-class Bishop(Piece):
+class Bishop(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
-        self.name = "Bishop"
+        self.name = "B"
 
-class Knight(Piece):
+    def getValidMoves(self, board: Board, square: Square = None) -> List[Location]:
+        if square == None: square = self.currentSquare
+        squareMap = board.locationSquareMap
+        offsets = [(-1,1), (1,1), (-1, -1), (1,-1)]
+        moveCandidates = []
+        for offset in offsets:
+            # explore the field in every possible direction (rankwise and filewise)
+            next = LocationFactory.build(square.location, offset[0], offset[1])
+            while (next in squareMap):
+                if squareMap[next].isOccupied:
+                    if squareMap[next].currentPiece.color == self.color:
+                        break
+                    moveCandidates.append(next)
+                    break
+                moveCandidates.append(next)
+                next = LocationFactory.build(next, offset[0], offset[1])
+        return moveCandidates
+
+    def makeMove(self, square: Square) -> None:
+        self.currentSquare.reset()
+        self.currentSquare = square
+        square.currentPiece = self
+        square.isOccupied = True
+
+class Knight(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
-        self.name = "Knight"
+        self.name = "N"
 
-class Rook(Piece):
+    def getValidMoves(self, board: Board) -> List[Location]:
+        moveCandidates = []
+        squareMap = board.locationSquareMap
+        offsets = [(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1)]
+        for offset in offsets:
+            next = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            if next in squareMap:
+                if squareMap[next].isOccupied == False:
+                    moveCandidates.append(next)
+                elif squareMap[next].currentPiece.color != self.color:
+                    moveCandidates.append(next)
+        return moveCandidates
+
+    def makeMove(self, square: Square) -> None:
+        self.currentSquare.reset()
+        self.currentSquare = square
+        square.currentPiece = self
+        square.isOccupied = True
+
+class Rook(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
-        self.name = "Rook"
+        self.name = "R"
+
+    def getValidMoves(self, board: Board, square: Square = None) -> List[Location]:
+        if square == None: square = self.currentSquare
+        squareMap = board.locationSquareMap
+        offsets = [(-1,0), (1,0), (0, -1), (0,1)]
+        moveCandidates = []
+        for offset in offsets:
+            # explore the field in every possible direction (rankwise and filewise)
+            next = LocationFactory.build(square.location, offset[0], offset[1])
+            while (next in squareMap):
+                if squareMap[next].isOccupied:
+                    if squareMap[next].currentPiece.color == self.color:
+                        break
+                    moveCandidates.append(next)
+                    break
+                moveCandidates.append(next)
+                next = LocationFactory.build(next, offset[0], offset[1])
+        return moveCandidates
+
+    def makeMove(self, square: Square) -> None:
+        self.currentSquare.reset()
+        self.currentSquare = square
+        square.currentPiece = self
+        square.isOccupied = True
 
 class Pawn(Piece,MovableInterface):
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
-        self.name = "Pawn"
+        self.name = "P"
+        self.isFirstMove = True
 
     def getValidMoves(self, board: Board) -> List[Location]:
-        print(self.name + " -> getValidMoves()")
-        return None
+        currentLocation = self.currentSquare.location
+        squareMap = board.locationSquareMap
+        moveCandidates = []
+        moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=0, rankOffset=1))
+        if self.isFirstMove:
+            moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=0, rankOffset=2))
+        moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=1, rankOffset=1))
+        moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=-1, rankOffset=1))
+        # filter out locations that are not on the board:
+        moveCandidates[:] = filterfalse(lambda candidate : candidate not in squareMap, moveCandidates)
+        # move logic:
+        # same-file moves (no capture) are only allowed if not blocked by other piece:
+        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file == currentLocation.file) and (squareMap[candidate].isOccupied == False), moveCandidates)
+        # captures are only allowed if opponent's piece: 
+        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == True) and (squareMap[candidate].currentPiece.color != self.color), moveCandidates)
+        # TODO: en passant captures + do not forward 2 squares if the first square is blocked
+        return moveCandidates
 
-    
     def makeMove(self, square: Square) -> None:
-        print(self.name + " -> makeMove()")
-        return None
+        if self.isFirstMove:
+            self.isFirstMove = False
+        self.currentSquare.reset()
+        self.currentSquare = square
+        square.currentPiece = self
+        square.isOccupied = True
 
 
+class PieceFactory:
+    def __init__(self) -> None:
+        pass
+    def getPieces() -> dict:
+        pieces = LocationDictionary()
+
+        # pawns:
+        for file in range(8):
+            pieces[Location(1,File(file))] = Pawn(PieceColor.WHITE)
+            pieces[Location(6,File(file))] = Pawn(PieceColor.BLACK)
+
+        # rooks:
+        pieces[Location(0, File.A)] = Rook(PieceColor.WHITE)
+        pieces[Location(0, File.H)] = Rook(PieceColor.WHITE)
+        pieces[Location(7, File.A)] = Rook(PieceColor.BLACK)
+        pieces[Location(7, File.H)] = Rook(PieceColor.BLACK)
+
+        # knights:
+        pieces[Location(0, File.B)] = Knight(PieceColor.WHITE)
+        pieces[Location(0, File.G)] = Knight(PieceColor.WHITE)
+        pieces[Location(7, File.B)] = Knight(PieceColor.BLACK)
+        pieces[Location(7, File.G)] = Knight(PieceColor.BLACK)
+
+        # bishops:
+        pieces[Location(0, File.C)] = Bishop(PieceColor.WHITE)
+        pieces[Location(0, File.F)] = Bishop(PieceColor.WHITE)
+        pieces[Location(7, File.C)] = Bishop(PieceColor.BLACK)
+        pieces[Location(7, File.F)] = Bishop(PieceColor.BLACK)
+
+        # queens:
+        pieces[Location(0, File.D)] = Queen(PieceColor.WHITE)
+        pieces[Location(7, File.D)] = Queen(PieceColor.BLACK)
+
+        # kings:
+        pieces[Location(0, File.E)] = King(PieceColor.WHITE)
+        pieces[Location(7, File.E)] = King(PieceColor.BLACK)
+        
+        return pieces
