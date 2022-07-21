@@ -1,5 +1,6 @@
 from chupochess.common import Location, SquareColor, File, PieceColor, LocationDictionary
 from chupochess.squares import Square
+from typing import List
 
 class Board:
     def __init__(self) -> None:
@@ -36,25 +37,35 @@ class Board:
             s+="\n"
         return s
 
-    def printBoard(self) -> None:
-        PREFIX_WHITE = '\033[93m'
-        SUFFIX_WHITE = '\033[0m'
+    def printBoard(self, validMoves:List[Location]=None) -> None:
+        ASCII_CLR_YELLOW = '\033[93m'
+        ASCII_CLR_RED = '\033[91m'
+        ASCII_CLR_RESET = '\033[0m'
         print("  A B C D E F G H   ")
         sOut = ""
         for rank in range(7,-1,-1):
             sOut = str(rank + 1) + " "
             for file in range(8):
+                # TODO: mark Valid Moves red
                 if self.boardSquares[file][rank].isOccupied:
                     piece = self.boardSquares[file][rank].currentPiece
-                    if piece.color == PieceColor.WHITE:
-                        sOut += PREFIX_WHITE + piece.name[0] + SUFFIX_WHITE + " "
+                    if (validMoves is not None) and (Location(rank, File(file)) in validMoves):   
+                        sOut += ASCII_CLR_RED + piece.name[0] + ASCII_CLR_RESET + " " # if isValidMove: mark red   
+                    elif piece.color == PieceColor.WHITE:
+                        sOut += ASCII_CLR_YELLOW + piece.name[0] + ASCII_CLR_RESET + " "
                     else:
                         sOut += piece.name[0] + " "
+                elif (validMoves is not None) and (Location(rank, File(file)) in validMoves):
+                    sOut += ASCII_CLR_RED + "_" + ASCII_CLR_RESET + " " 
                 else:
                     sOut += "_ "
             print(sOut + str(rank + 1))
         print("  A B C D E F G H   ")
             
+
+class AttackMap:
+    #TODO 
+    pass
 
 
 

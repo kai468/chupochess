@@ -42,8 +42,11 @@ class LocationFactory:
     def __init__(self) -> None:
         pass
     def build(location: Location, fileOffset: int, rankOffset: int) -> Location:
-        newLocation = Location(location.rank + rankOffset, File(location.file.value + fileOffset))
-        return newLocation
+        try:
+            newLocation = Location(location.rank + rankOffset, File(location.file.value + fileOffset))
+            return newLocation
+        except:
+            return None
 
 class LocationDictionary(dict):
     # TODO: is there a more elegant way to solve this?
