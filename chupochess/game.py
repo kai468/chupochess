@@ -1,7 +1,7 @@
 from select import select
 from chupochess.board import Board
 from chupochess.common import File, Location
-#from chupochess.pieces import Bishop, MovableInterface, Pawn, PieceColor, Queen, Rook
+
 
 class Game:
     def __init__(self):

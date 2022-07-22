@@ -3,6 +3,11 @@ from enum import Enum
 class PieceColor(Enum):
     WHITE = 0
     BLACK = 1
+    def Not(self):
+        if self == self.WHITE:
+            return PieceColor.BLACK
+        else:
+            return PieceColor.WHITE
 
 class SquareColor(Enum):
     LIGHT = 0
