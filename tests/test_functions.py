@@ -1,9 +1,6 @@
 
 # run all tests via command line with command "python setup.py pytest" in home folder
 
-from ast import While
-
-
 def test_pieceColor_Not():
     from chupochess.common import PieceColor
     white = PieceColor.WHITE
@@ -16,9 +13,10 @@ def test_LocationDictionary():
     from chupochess.common import Location, LocationDictionary, File
     dictionary = LocationDictionary()
     location = Location(1, File.A)
+    assert location not in dictionary
     dictionary[location] = "something"
-    assert location in dictionary           # test in operator (__contains()__)
-    assert dictionary[location]             # test getter (__getitem()__)
+    assert location in dictionary                           # test in operator (__contains()__)
+    assert dictionary[location] == "something"              # test getter (__getitem()__)
 
 def test_King_getCastlingRights():
     # TODO: write test for getCastlingRights 
