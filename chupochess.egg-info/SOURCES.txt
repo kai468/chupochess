@@ -3,7 +3,6 @@ setup.py
 chupochess/__init__.py
 chupochess/board.py
 chupochess/common.py
-chupochess/functions.py
 chupochess/game.py
 chupochess/interfaces.py
 chupochess/pieces.py

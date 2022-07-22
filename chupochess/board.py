@@ -9,6 +9,7 @@ class Board:
         self.locationSquareMap = LocationDictionary()
         self.whitePieces = []
         self.blackPieces = []
+        self.enPassantPossible = []         # TODO
         pieces = PieceFactory.getPieces()
         for file in range(8):
             currentFile = []
@@ -61,11 +62,14 @@ class Board:
                     sOut += "_ "
             print(sOut + str(rank + 1))
         print("  A B C D E F G H   ")
+
+    def getPieceList(self, color: PieceColor) -> List[object]:
+        if color == PieceColor.BLACK:
+            return self.blackPieces.copy()
+        else:
+            return self.whitePieces.copy()
             
 
-class AttackMap:
-    #TODO 
-    pass
 
 
 
