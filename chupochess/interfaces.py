@@ -18,5 +18,5 @@ class MovableInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def makeMove(self, square: Square) -> None:
+    def makeMove(self, square: Square, board: Board) -> None:
         raise NotImplementedError

@@ -19,7 +19,6 @@ def test_LocationDictionary():
     assert dictionary[location] == "something"              # test getter (__getitem()__)
 
 def test_King_getCastlingRights():
-    # TODO: write test for getCastlingRights 
     from chupochess.board import Board
     from chupochess.common import PieceColor, Location, File
     from itertools import filterfalse

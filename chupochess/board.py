@@ -10,6 +10,8 @@ class Board:
         self.whitePieces = []
         self.blackPieces = []
         self.enPassantPossible = []         # TODO
+        self.whiteKingLocation = Location(0, File.E)
+        self.blackKingLocation = Location(7, File.E)
         pieces = PieceFactory.getPieces()
         for file in range(8):
             currentFile = []
@@ -68,6 +70,13 @@ class Board:
             return self.blackPieces.copy()
         else:
             return self.whitePieces.copy()
+
+    def getKingLocation(self, color: PieceColor) -> Location:
+        if color == PieceColor.BLACK:
+            return self.blackKingLocation
+        else:
+            return self.whiteKingLocation
+
             
 
 
