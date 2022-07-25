@@ -43,6 +43,11 @@ class King(Piece, MovableInterface):
                 else: 
                     locationsUnderAttack.extend(opponentPiece.getValidMoves(board))
             moveCandidates[:] = filterfalse(lambda candidate : candidate in locationsUnderAttack, moveCandidates)
+            # TODO: this excludes defended Pieces (because the square where the defended piece is located is not
+            #       a valid move since it is blocked by that piece) --> see Screenshot bug_inCheckDetection_of_
+            #       moveCandidate
+            #       --> maybe one solution would be to write a second "getDefendedLocations" method that covers also
+            #       the first location that is blocked by a team piece
         return moveCandidates
 
     def makeMove(self, square: Square, board: Board) -> None:
@@ -55,7 +60,7 @@ class King(Piece, MovableInterface):
                 rooks[:] = filterfalse(lambda piece : (piece.name != "R") or (piece.currentSquare.location != Location(self.currentSquare.location.rank, File.H)), rooks)
                 rooks[0].makeMove(board.locationSquareMap[Location(self.currentSquare.location.rank, File.F)], board)
             else:
-                # TODO: long castle -> rook has to be moved from file A to D
+                # long castle -> rook has to be moved from file A to D
                 rooks[:] = filterfalse(lambda piece : (piece.name != "R") or (piece.currentSquare.location != Location(self.currentSquare.location.rank, File.A)), rooks)
                 rooks[0].makeMove(board.locationSquareMap[Location(self.currentSquare.location.rank, File.D)], board)
         self.currentSquare.reset()
@@ -67,8 +72,6 @@ class King(Piece, MovableInterface):
             board.whiteKingLocation = self.currentSquare.location
         else:
             board.blackKingLocation = self.currentSquare.location
-        
-
 
     def getCastlingRights(self, board: Board) -> List[Location]:
         castlingRights = []
@@ -89,6 +92,10 @@ class King(Piece, MovableInterface):
                     if board.locationSquareMap[next].isOccupied:
                         pathBlocked = True
                         break
+                    elif abs(cnt <= 2) and self.__castlingSquareUnderAttack(cnt, board):
+                        # check if squares on File C/D or F/G are under attack
+                        pathBlocked = True
+                        break
                     if cnt == fileOffset:
                         break
                     cnt = (cnt - 1) if fileOffset < 0 else (cnt + 1)
@@ -99,8 +106,46 @@ class King(Piece, MovableInterface):
                     castlingRights.append(LocationFactory.build(self.currentSquare.location, fileOffset, 0)) 
         self.castlingRights = castlingRights
         return castlingRights
-        # TODO: check whether an opponent piece is attacking one of the squares on path to castled position
-        #       (only the two squares on file C/D or F/G have to be checked, for long castle the B file is irrelevant)
+
+    def __castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
+        # TODO: refactoring - the algorithm for bishop/queen and rook/queen are identical -> maybe add another
+        #       component to the Tupel and use that? 
+        squareMap = board.locationSquareMap
+
+        # OFFSET: (FILE, RANK)
+
+        # potential attacker: knight:
+        offsets = [(-2,1),(-1,2),(1,2),(2,1)] if self.color == PieceColor.WHITE else [(2,-1),(1,-2),(-1,-2),(-2,-1)]    
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
+            if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "N" and squareMap[attackerLocation].currentPiece.color != self.color:
+                return True
+
+        # potential attacker: bishop/queen:
+        offsets = [(-1,1),(1,1)] if self.color == PieceColor.WHITE else [(-1,-1),(1,-1)]
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
+            while attackerLocation in squareMap:
+                if squareMap[attackerLocation].isOccupied:
+                    if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in ["B","Q"]):
+                        return True
+                    else:
+                        break
+                attackerLocation = LocationFactory.build(attackerLocation, offset[0], offset[1])
+
+        # potential attacker: rook/queen
+        offsets = [(0,1),(int(fileOffset / abs(fileOffset)),0)] if self.color == PieceColor.WHITE else [(0,-1),(int(fileOffset / abs(fileOffset)),0)]
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
+            while attackerLocation in squareMap:
+                if squareMap[attackerLocation].isOccupied:
+                    if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in ["R","Q"]):
+                        return True
+                    else: 
+                        break
+                attackerLocation = LocationFactory.build(attackerLocation, offset[0], offset[1])
+        return False
+        
     
     def isInCheck(self, board: Board) -> bool:
         # check whether King is under immediate attack:

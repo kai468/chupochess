@@ -76,7 +76,6 @@ class Board:
             return self.blackKingLocation
         else:
             return self.whiteKingLocation
-
             
 
 
