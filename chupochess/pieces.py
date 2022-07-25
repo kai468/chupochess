@@ -111,42 +111,30 @@ class King(Piece, MovableInterface):
         return castlingRights
 
     def __castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
-        # TODO: refactoring - the algorithm for bishop/queen and rook/queen are identical -> maybe add another
-        #       component to the Tupel and use that? 
         squareMap = board.locationSquareMap
-
-        # OFFSET: (FILE, RANK)
-
-        # potential attacker: knight:
+        
+        # potential attacker: knight -> offset: List[Tupel[file: int, rank: int]]
         offsets = [(-2,1),(-1,2),(1,2),(2,1)] if self.color == PieceColor.WHITE else [(2,-1),(1,-2),(-1,-2),(-2,-1)]    
         for offset in offsets:
             attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
             if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "N" and squareMap[attackerLocation].currentPiece.color != self.color:
                 return True
 
-        # potential attacker: bishop/queen:
-        offsets = [(-1,1),(1,1)] if self.color == PieceColor.WHITE else [(-1,-1),(1,-1)]
+        # potential attacker: rook/queen/bishop -> offset: List[Tupel[file: int, rank: int, relevantAttackers: List[str]]]
+        if self.color == PieceColor.WHITE:
+            offsets = [(-1,1,["B","Q"]),(1,1,["B","Q"]),(0,1,["R","Q"]),(int(fileOffset / abs(fileOffset)),0,["R","Q"])]
+        else:
+            offsets = [(-1,-1,["B","Q"]),(1,-1,["B","Q"]),(0,-1,["R","Q"]),(int(fileOffset / abs(fileOffset)),0,["R","Q"])]
         for offset in offsets:
             attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
             while attackerLocation in squareMap:
                 if squareMap[attackerLocation].isOccupied:
-                    if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in ["B","Q"]):
+                    if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in offset[2]):
                         return True
                     else:
                         break
                 attackerLocation = LocationFactory.build(attackerLocation, offset[0], offset[1])
-
-        # potential attacker: rook/queen
-        offsets = [(0,1),(int(fileOffset / abs(fileOffset)),0)] if self.color == PieceColor.WHITE else [(0,-1),(int(fileOffset / abs(fileOffset)),0)]
-        for offset in offsets:
-            attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
-            while attackerLocation in squareMap:
-                if squareMap[attackerLocation].isOccupied:
-                    if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in ["R","Q"]):
-                        return True
-                    else: 
-                        break
-                attackerLocation = LocationFactory.build(attackerLocation, offset[0], offset[1])
+        
         return False
         
     
