@@ -112,7 +112,7 @@ class King(Piece, MovableInterface):
 
     def __castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
         squareMap = board.locationSquareMap
-        
+
         # potential attacker: knight -> offset: List[Tupel[file: int, rank: int]]
         offsets = [(-2,1),(-1,2),(1,2),(2,1)] if self.color == PieceColor.WHITE else [(2,-1),(1,-2),(-1,-2),(-2,-1)]    
         for offset in offsets:
@@ -257,23 +257,31 @@ class Pawn(Piece,MovableInterface):
         self.isFirstMove = True
 
     def getValidMoves(self, board: Board) -> List[Location]:
+        rankOffset = 1 if self.color == PieceColor.WHITE else -1
         currentLocation = self.currentSquare.location
         squareMap = board.locationSquareMap
         moveCandidates = []
-        moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=0, rankOffset=1))
-        if self.isFirstMove:
-            moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=0, rankOffset=2))
-        moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=1, rankOffset=1))
-        moveCandidates.append(LocationFactory.build(currentLocation, fileOffset=-1, rankOffset=1))
+        moveCandidates.append(LocationFactory.build(currentLocation, 0, rankOffset))
+        if self.isFirstMove and (squareMap[moveCandidates[0]].isOccupied == False):
+            moveCandidates.append(LocationFactory.build(currentLocation, 0, 2*rankOffset))
+        moveCandidates.append(LocationFactory.build(currentLocation, 1, rankOffset))
+        moveCandidates.append(LocationFactory.build(currentLocation, -1, rankOffset))
         # filter out locations that are not on the board:
         moveCandidates[:] = filterfalse(lambda candidate : candidate not in squareMap, moveCandidates)
         # move logic:
         # same-file moves (no capture) are only allowed if not blocked by other piece:
-        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file == currentLocation.file) and (squareMap[candidate].isOccupied == False), moveCandidates)
+        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file == currentLocation.file) and (squareMap[candidate].isOccupied == True), moveCandidates)
         # captures are only allowed if opponent's piece: 
-        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == True) and (squareMap[candidate].currentPiece.color != self.color), moveCandidates)
-        # TODO: en passant captures + do not forward 2 squares if the first square is blocked
+        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == False), moveCandidates)
+        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == True) and (squareMap[candidate].currentPiece.color == self.color), moveCandidates)
+        # TODO: en passant captures 
         return moveCandidates
+
+    def getDefendedLocations(self, board: Board) -> List[Location]:
+        defendedLocations = []
+        squareMap = board.locationSquareMap
+        return defendedLocations
+
 
     def makeMove(self, square: Square, board: Board) -> None:
         if self.isFirstMove:
