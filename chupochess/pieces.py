@@ -46,7 +46,18 @@ class King(Piece, MovableInterface):
         return moveCandidates
 
     def makeMove(self, square: Square, board: Board) -> None:
-        # TODO: refactor makeMove (identical for all pieces but the Pawns)
+        # TODO: refactor makeMove (identical for all pieces but the Pawns and Kings)
+        if abs(self.currentSquare.location.file.value - square.location.file.value) > 1:
+            # castling move -> move rook, too:
+            rooks = board.getPieceList(self.color)
+            if square.location.file == File.G:
+                # short castle -> rook has to be moved from file H to F
+                rooks[:] = filterfalse(lambda piece : (piece.name != "R") or (piece.currentSquare.location != Location(self.currentSquare.location.rank, File.H)), rooks)
+                rooks[0].makeMove(board.locationSquareMap[Location(self.currentSquare.location.rank, File.F)], board)
+            else:
+                # TODO: long castle -> rook has to be moved from file A to D
+                rooks[:] = filterfalse(lambda piece : (piece.name != "R") or (piece.currentSquare.location != Location(self.currentSquare.location.rank, File.A)), rooks)
+                rooks[0].makeMove(board.locationSquareMap[Location(self.currentSquare.location.rank, File.D)], board)
         self.currentSquare.reset()
         self.currentSquare = square
         self.isFirstMove = False
@@ -56,7 +67,8 @@ class King(Piece, MovableInterface):
             board.whiteKingLocation = self.currentSquare.location
         else:
             board.blackKingLocation = self.currentSquare.location
-        # TODO: check if move is castling move. if yes: move rook, too. 
+        
+
 
     def getCastlingRights(self, board: Board) -> List[Location]:
         castlingRights = []
@@ -82,6 +94,8 @@ class King(Piece, MovableInterface):
                     cnt = (cnt - 1) if fileOffset < 0 else (cnt + 1)
                     next = LocationFactory.build(self.currentSquare.location, cnt, 0)
                 if pathBlocked == False:
+                    if fileOffset == -3:
+                        fileOffset = -2     # king's target position is relevant for the Location
                     castlingRights.append(LocationFactory.build(self.currentSquare.location, fileOffset, 0)) 
         self.castlingRights = castlingRights
         return castlingRights
@@ -109,7 +123,7 @@ class Queen(Piece, MovableInterface):
         moveCandidates.extend(self.rook.getValidMoves(board, self.currentSquare))   
         return moveCandidates
     
-    def makeMove(self, square: Square) -> None:
+    def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
         self.currentSquare = square
         square.currentPiece = self
@@ -138,7 +152,7 @@ class Bishop(Piece, MovableInterface):
                 next = LocationFactory.build(next, offset[0], offset[1])
         return moveCandidates
 
-    def makeMove(self, square: Square) -> None:
+    def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
         self.currentSquare = square
         square.currentPiece = self
@@ -162,7 +176,7 @@ class Knight(Piece, MovableInterface):
                     moveCandidates.append(next)
         return moveCandidates
 
-    def makeMove(self, square: Square) -> None:
+    def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
         self.currentSquare = square
         square.currentPiece = self
@@ -192,7 +206,7 @@ class Rook(Piece, MovableInterface):
                 next = LocationFactory.build(next, offset[0], offset[1])
         return moveCandidates
 
-    def makeMove(self, square: Square) -> None:
+    def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
         self.currentSquare = square
         self.isFirstMove = False
@@ -225,7 +239,7 @@ class Pawn(Piece,MovableInterface):
         # TODO: en passant captures + do not forward 2 squares if the first square is blocked
         return moveCandidates
 
-    def makeMove(self, square: Square) -> None:
+    def makeMove(self, square: Square, board: Board) -> None:
         if self.isFirstMove:
             self.isFirstMove = False
         self.currentSquare.reset()
