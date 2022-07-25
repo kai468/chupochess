@@ -1,4 +1,4 @@
-#from chupochess.game import Game
+from chupochess.game import Game
 
 game = Game()
 game.main()

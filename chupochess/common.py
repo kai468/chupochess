@@ -54,17 +54,15 @@ class LocationFactory:
             return None
 
 class LocationDictionary(dict):
-    # TODO: is there a more elegant way to solve this?
-    # problem: in operator is not working for Location comparison
-    # also getting an item via dict[key] is not working for Location comparison
-    # -> __contains__() and __getitem__() must be overwritten 
     def __contains__(self, __o: Location) -> bool:
+        # must be overwritten to make 'in' operator work for Location comparison
         for key in self.keys():
             if key == __o: 
                 return True
         return False
 
     def __getitem__(self, __k: Location) -> object:
+        # must be overwritten to make getting an item via dict[key] possible
         for key in self.keys():
             if key == __k:
                 return super().__getitem__(key)

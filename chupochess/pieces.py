@@ -50,6 +50,9 @@ class King(Piece, MovableInterface):
             #       the first location that is blocked by a team piece
         return moveCandidates
 
+    def getDefendedLocations(self, board: Board) -> List[Location]:
+        pass    # TODO
+
     def makeMove(self, square: Square, board: Board) -> None:
         # TODO: refactor makeMove (identical for all pieces but the Pawns and Kings)
         if abs(self.currentSquare.location.file.value - square.location.file.value) > 1:
