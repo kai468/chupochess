@@ -38,20 +38,16 @@ class King(Piece, MovableInterface):
             locationsUnderAttack = []
             # TODO: there must be a more efficient way to do the following
             for opponentPiece in board.getPieceList(self.color.Not()):
-                if opponentPiece.name == "K":
-                    locationsUnderAttack.extend(opponentPiece.getValidMoves(board, False))
-                else: 
-                    locationsUnderAttack.extend(opponentPiece.getValidMoves(board))
+                locationsUnderAttack.extend(opponentPiece.getDefendedLocations(board))
             moveCandidates[:] = filterfalse(lambda candidate : candidate in locationsUnderAttack, moveCandidates)
-            # TODO: this excludes defended Pieces (because the square where the defended piece is located is not
-            #       a valid move since it is blocked by that piece) --> see Screenshot bug_inCheckDetection_of_
-            #       moveCandidate
-            #       --> maybe one solution would be to write a second "getDefendedLocations" method that covers also
-            #       the first location that is blocked by a team piece
         return moveCandidates
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
-        pass    # TODO
+        defendedLocations = []
+        defendedLocations.extend(self.bishop.getDefendedLocations(board, self.currentSquare))
+        defendedLocations.extend(self.rook.getDefendedLocations(board, self.currentSquare))
+        defendedLocations[:] = filterfalse(lambda candidate : (abs(candidate.file.value - self.currentSquare.location.file.value) > 1) or (abs(candidate.rank - self.currentSquare.location.rank) > 1), defendedLocations)
+        return defendedLocations
 
     def makeMove(self, square: Square, board: Board) -> None:
         # TODO: refactor makeMove (identical for all pieces but the Pawns and Kings)
@@ -158,6 +154,12 @@ class Queen(Piece, MovableInterface):
         moveCandidates.extend(self.bishop.getValidMoves(board, self.currentSquare))  
         moveCandidates.extend(self.rook.getValidMoves(board, self.currentSquare))   
         return moveCandidates
+
+    def getDefendedLocations(self, board: Board) -> List[Location]:
+        defendedLocations = []
+        defendedLocations.extend(self.bishop.getDefendedLocations(board, self.currentSquare))
+        defendedLocations.extend(self.rook.getDefendedLocations(board, self.currentSquare))
+        return defendedLocations
     
     def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
@@ -170,7 +172,7 @@ class Bishop(Piece, MovableInterface):
         Piece.__init__(self, color)
         self.name = "B"
 
-    def getValidMoves(self, board: Board, square: Square = None) -> List[Location]:
+    def getValidMoves(self, board: Board, square: Square = None, includeDefendedLocations: bool = False) -> List[Location]:
         if square == None: square = self.currentSquare
         squareMap = board.locationSquareMap
         offsets = [(-1,1), (1,1), (-1, -1), (1,-1)]
@@ -181,12 +183,17 @@ class Bishop(Piece, MovableInterface):
             while (next in squareMap):
                 if squareMap[next].isOccupied:
                     if squareMap[next].currentPiece.color == self.color:
+                        if includeDefendedLocations:
+                            moveCandidates.append(next)
                         break
                     moveCandidates.append(next)
                     break
                 moveCandidates.append(next)
                 next = LocationFactory.build(next, offset[0], offset[1])
         return moveCandidates
+
+    def getDefendedLocations(self, board: Board, square: Square = None) -> List[Location]:
+        return self.getValidMoves(board, square, True)
 
     def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
@@ -199,7 +206,7 @@ class Knight(Piece, MovableInterface):
         Piece.__init__(self, color)
         self.name = "N"
 
-    def getValidMoves(self, board: Board) -> List[Location]:
+    def getValidMoves(self, board: Board, includeDefendedLocations: bool = False) -> List[Location]:
         moveCandidates = []
         squareMap = board.locationSquareMap
         offsets = [(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1)]
@@ -210,7 +217,12 @@ class Knight(Piece, MovableInterface):
                     moveCandidates.append(next)
                 elif squareMap[next].currentPiece.color != self.color:
                     moveCandidates.append(next)
+                elif includeDefendedLocations:
+                    moveCandidates.append(next)
         return moveCandidates
+
+    def getDefendedLocations(self, board: Board) -> List[Location]:
+        return self.getValidMoves(board, True)
 
     def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
@@ -224,7 +236,7 @@ class Rook(Piece, MovableInterface):
         self.name = "R"
         self.isFirstMove = True
 
-    def getValidMoves(self, board: Board, square: Square = None) -> List[Location]:
+    def getValidMoves(self, board: Board, square: Square = None, includeDefendedLocations: bool = False) -> List[Location]:
         if square == None: square = self.currentSquare
         squareMap = board.locationSquareMap
         offsets = [(-1,0), (1,0), (0, -1), (0,1)]
@@ -235,12 +247,17 @@ class Rook(Piece, MovableInterface):
             while (next in squareMap):
                 if squareMap[next].isOccupied:
                     if squareMap[next].currentPiece.color == self.color:
+                        if includeDefendedLocations:
+                            moveCandidates.append(next)
                         break
                     moveCandidates.append(next)
                     break
                 moveCandidates.append(next)
                 next = LocationFactory.build(next, offset[0], offset[1])
         return moveCandidates
+
+    def getDefendedLocations(self, board: Board, square: Square = None) -> List[Location]:
+        return self.getValidMoves(board, square, True)
 
     def makeMove(self, square: Square, board: Board) -> None:
         self.currentSquare.reset()
@@ -278,8 +295,12 @@ class Pawn(Piece,MovableInterface):
         return moveCandidates
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
+        currentLocation = self.currentSquare.location
         defendedLocations = []
-        squareMap = board.locationSquareMap
+        rankOffset = 1 if self.color == PieceColor.WHITE else -1
+        defendedLocations.append(LocationFactory.build(currentLocation, 1, rankOffset))
+        defendedLocations.append(LocationFactory.build(currentLocation, -1, rankOffset))
+        defendedLocations[:] = filterfalse(lambda candidate : candidate not in board.locationSquareMap, defendedLocations)
         return defendedLocations
 
 
@@ -300,7 +321,7 @@ class PieceFactory:
 
         # pawns:
         for file in range(8):
-            pieces[Location(1,File(file))] = Pawn(PieceColor.WHITE)
+            #pieces[Location(1,File(file))] = Pawn(PieceColor.WHITE)
             pieces[Location(6,File(file))] = Pawn(PieceColor.BLACK)
 
         # rooks:
@@ -310,19 +331,19 @@ class PieceFactory:
         pieces[Location(7, File.H)] = Rook(PieceColor.BLACK)
 
         # knights:
-        pieces[Location(0, File.B)] = Knight(PieceColor.WHITE)
-        pieces[Location(0, File.G)] = Knight(PieceColor.WHITE)
+        #pieces[Location(0, File.B)] = Knight(PieceColor.WHITE)
+        #pieces[Location(0, File.G)] = Knight(PieceColor.WHITE)
         pieces[Location(7, File.B)] = Knight(PieceColor.BLACK)
         pieces[Location(7, File.G)] = Knight(PieceColor.BLACK)
 
         # bishops:
-        pieces[Location(0, File.C)] = Bishop(PieceColor.WHITE)
-        pieces[Location(0, File.F)] = Bishop(PieceColor.WHITE)
+        #pieces[Location(0, File.C)] = Bishop(PieceColor.WHITE)
+        #pieces[Location(0, File.F)] = Bishop(PieceColor.WHITE)
         pieces[Location(7, File.C)] = Bishop(PieceColor.BLACK)
         pieces[Location(7, File.F)] = Bishop(PieceColor.BLACK)
 
         # queens:
-        pieces[Location(0, File.D)] = Queen(PieceColor.WHITE)
+        #pieces[Location(0, File.D)] = Queen(PieceColor.WHITE)
         pieces[Location(7, File.D)] = Queen(PieceColor.BLACK)
 
         # kings:

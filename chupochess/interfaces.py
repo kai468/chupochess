@@ -20,3 +20,7 @@ class MovableInterface(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def makeMove(self, square: Square, board: Board) -> None:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def getDefendedLocations(self, board: Board) -> List[Location]:
+        raise NotImplementedError
