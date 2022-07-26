@@ -32,7 +32,7 @@ class King(Piece, MovableInterface):
         self.isFirstMove = True  
         self.castlingRights = []           
 
-    def getValidMoves(self, board: Board, checkDetection: bool = True) -> List[Location]:
+    def getValidMoves(self, board: Board) -> List[Location]:
         moveCandidates = []
         moveCandidates.extend(self.bishop.getValidMoves(board, self.currentSquare))     
         moveCandidates.extend(self.rook.getValidMoves(board, self.currentSquare))      
@@ -43,10 +43,9 @@ class King(Piece, MovableInterface):
         #if checkDetection:
         locationsUnderAttack = []
         # TODO: there must be a more efficient way to do the following
-        if checkDetection:
-            for opponentPiece in board.getPieceList(self.color.Not()):
-                locationsUnderAttack.extend(opponentPiece.getDefendedLocations(board))
-            moveCandidates[:] = filterfalse(lambda candidate : candidate in locationsUnderAttack, moveCandidates)
+        for opponentPiece in board.getPieceList(self.color.Not()):
+            locationsUnderAttack.extend(opponentPiece.getDefendedLocations(board))
+        moveCandidates[:] = filterfalse(lambda candidate : candidate in locationsUnderAttack, moveCandidates)
         return moveCandidates
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
@@ -108,7 +107,7 @@ class King(Piece, MovableInterface):
                     if fileOffset == -3:
                         fileOffset = -2     # king's target position is relevant for the Location
                     castlingRights.append(LocationFactory.build(self.currentSquare.location, fileOffset, 0)) 
-        # TODO: inCheck detection - somehow the call of self.isInCheck(board) leads to a core dump
+        # no castling if king is in check:
         if self.isInCheck(board):
             castlingRights.clear()
         self.castlingRights = castlingRights
@@ -144,12 +143,9 @@ class King(Piece, MovableInterface):
     
     def isInCheck(self, board: Board) -> bool:
         # check whether King is under immediate attack:
-        # TODO: refactor
-        for opponentPiece in board.getPieceList(self.color.Not()):
-            if opponentPiece.name != "K":           # king cannot be checked by another king
-                for location in opponentPiece.getValidMoves(board):
-                    if location == self.currentSquare.location:
-                        return True
+        for opponentPiece in (piece for piece in board.getPieceList(self.color.Not()) if piece.name != "K"):
+            for location in (loc for loc in opponentPiece.getValidMoves(board) if loc == self.currentSquare.location):
+                return True
         return False
 
 class Queen(Piece, MovableInterface):
