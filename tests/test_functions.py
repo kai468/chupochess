@@ -59,10 +59,13 @@ def test_Piece_isPinnedBy_Rook():
     makeMove("G8", "F6")
     knight = board.locationSquareMap[Location(5, File.F)].currentPiece
     assert knight.isPinnedBy(board) == None
+    assert len(knight.getValidMoves(board)) > 0
     makeMove("A1", "H6")
     assert knight.isPinnedBy(board).name == "R"
+    assert len(knight.getValidMoves(board)) == 0
     makeMove("G7","G6")
     assert knight.isPinnedBy(board) == None
+    assert len(knight.getValidMoves(board)) > 0
 
 def test_King_inCheckDetection():
     from chupochess.board import Board

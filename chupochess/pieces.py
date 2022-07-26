@@ -1,5 +1,5 @@
 from itertools import filterfalse
-from typing import List
+from typing import List, Tuple
 from typing_extensions import Self
 from chupochess.board import Board
 from chupochess.interfaces import MovableInterface
@@ -25,12 +25,13 @@ class Piece:
         targetSquare.isOccupied = True
         board.whiteToMove = not board.whiteToMove
 
-    def isPinnedBy(self, board: Board) -> Self:     # returns the "pinning" piece
+    def isPinnedBy(self, board: Board, square: Square = None) -> Self:     # returns the "pinning" piece
         # TODO: use this is move decision!
+        if square == None: square = self.currentSquare
         kingLocation = board.getKingLocation(self.color)
         squareMap = board.locationSquareMap
         # check if active piece is on a "attack path" relative to king:
-        locationOffset = kingLocation.offset(self.currentSquare.location)
+        locationOffset = kingLocation.offset(square.location)
         if abs(locationOffset[0]) == abs(locationOffset[1]):
             # possible attackers: B/Q
             offset = (int(locationOffset[0]/abs(locationOffset[0])), int(locationOffset[1]/abs(locationOffset[1])))
@@ -47,7 +48,7 @@ class Piece:
         else:
             return None
         while next in squareMap:
-            if (squareMap[next].isOccupied == False) or (next == self.currentSquare.location):
+            if (squareMap[next].isOccupied == False) or (next == square.location):
                 next = LocationFactory.build(next, offset[0], offset[1])
             elif abs(kingLocation.offset(next)[relevantIndex]) < abs(locationOffset[relevantIndex]): 
                 # king is protected by other piece -> no pin!
@@ -250,8 +251,25 @@ class Bishop(Piece, MovableInterface):
                     break
                 moveCandidates.append(next)
                 next = LocationFactory.build(next, offset[0], offset[1])
+        # check if piece is pinned:
+        attacker = self.isPinnedBy(board, square)
+        if attacker:
+            attackerOffset = square.location.offset(attacker.currentSquare.location)
+            if 0 in attackerOffset:
+                # attacker on the same rank or file -> no movement possible
+                moveCandidates.clear()
+            else:
+                # attacker on the same diagonal -> limited movement possible
+                # (only in direction of offset or in inverse direction)
+                moveCandidates[:] = filterfalse(lambda candidate : (int(candidate.offset(square.location)[0]/abs(candidate.offset(square.location)[0])),candidate.offset(square.location)[1]/abs(candidate.offset(square.location)[1])) not in self._limitMovementPinnedBishop(attackerOffset), moveCandidates)
+                # TODO: this became horribly unreadable -> refactor!
         return moveCandidates
 
+    def _limitMovementPinnedBishop(attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
+        norm = (int(attackerOffset[0]/abs(attackerOffset[0])),int(attackerOffset[1]/abs(attackerOffset[1])))
+        inv = (-norm[0], -norm[1])
+        return (norm, inv)
+                
     def getDefendedLocations(self, board: Board, square: Square = None) -> List[Location]:
         return self.getValidMoves(board, square, True)
 
@@ -265,9 +283,13 @@ class Knight(Piece, MovableInterface):
         self.name = "N"
 
     def getValidMoves(self, board: Board, includeDefendedLocations: bool = False) -> List[Location]:
+        # TODO: add isPinnedBy verification
         moveCandidates = []
         squareMap = board.locationSquareMap
         offsets = [(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1)]
+        if self.isPinnedBy(board):
+            # knight is pinned -> no movement possible
+            return moveCandidates
         for offset in offsets:
             next = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
             if next in squareMap:
@@ -293,6 +315,7 @@ class Rook(Piece, MovableInterface):
         self.isFirstMove = True
 
     def getValidMoves(self, board: Board, square: Square = None, includeDefendedLocations: bool = False) -> List[Location]:
+        # TODO: add isPinnedBy verification
         if square == None: square = self.currentSquare
         squareMap = board.locationSquareMap
         offsets = [(-1,0), (1,0), (0, -1), (0,1)]
@@ -329,6 +352,7 @@ class Pawn(Piece,MovableInterface):
         self.enPassantPossible = False
 
     def getValidMoves(self, board: Board) -> List[Location]:
+        # TODO: add isPinnedBy verification
         rankOffset = 1 if self.color == PieceColor.WHITE else -1
         currentLocation = self.currentSquare.location
         squareMap = board.locationSquareMap

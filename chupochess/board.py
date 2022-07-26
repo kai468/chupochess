@@ -25,7 +25,7 @@ class Board:
                     piece = pieces[newSquare.location]
                     newSquare.isOccupied = True
                     newSquare.currentPiece = piece
-                    piece.currentSquare = newSquare
+                    piece.currentSquare = newSquare         # TODO: for bishop and rook lying "under" the queen/king, there is no square set (and therefore no location)
                     if piece.color == PieceColor.BLACK:
                         self.blackPieces.append(piece)
                     else:
