@@ -8,6 +8,8 @@ class Game:
         pass
     def main(self) -> None:
         # TODO: inputs/gameplay
+        # TODO: checkmate detection + draw detection
+        # TODO: GUI
         board = Board()
 
         files = [file.name for file in File]

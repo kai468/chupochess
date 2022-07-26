@@ -91,7 +91,7 @@ class King(Piece, MovableInterface):
                     if board.locationSquareMap[next].isOccupied:
                         pathBlocked = True
                         break
-                    elif abs(cnt <= 2) and self.__castlingSquareUnderAttack(cnt, board):
+                    elif abs(cnt <= 2) and self._castlingSquareUnderAttack(cnt, board):
                         # check if squares on File C/D or F/G are under attack
                         pathBlocked = True
                         break
@@ -106,7 +106,7 @@ class King(Piece, MovableInterface):
         self.castlingRights = castlingRights
         return castlingRights
 
-    def __castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
+    def _castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
         squareMap = board.locationSquareMap
 
         # potential attacker: knight -> offset: List[Tupel[file: int, rank: int]]
@@ -321,7 +321,7 @@ class PieceFactory:
 
         # pawns:
         for file in range(8):
-            #pieces[Location(1,File(file))] = Pawn(PieceColor.WHITE)
+            pieces[Location(1,File(file))] = Pawn(PieceColor.WHITE)
             pieces[Location(6,File(file))] = Pawn(PieceColor.BLACK)
 
         # rooks:
@@ -331,19 +331,19 @@ class PieceFactory:
         pieces[Location(7, File.H)] = Rook(PieceColor.BLACK)
 
         # knights:
-        #pieces[Location(0, File.B)] = Knight(PieceColor.WHITE)
-        #pieces[Location(0, File.G)] = Knight(PieceColor.WHITE)
+        pieces[Location(0, File.B)] = Knight(PieceColor.WHITE)
+        pieces[Location(0, File.G)] = Knight(PieceColor.WHITE)
         pieces[Location(7, File.B)] = Knight(PieceColor.BLACK)
         pieces[Location(7, File.G)] = Knight(PieceColor.BLACK)
 
         # bishops:
-        #pieces[Location(0, File.C)] = Bishop(PieceColor.WHITE)
-        #pieces[Location(0, File.F)] = Bishop(PieceColor.WHITE)
+        pieces[Location(0, File.C)] = Bishop(PieceColor.WHITE)
+        pieces[Location(0, File.F)] = Bishop(PieceColor.WHITE)
         pieces[Location(7, File.C)] = Bishop(PieceColor.BLACK)
         pieces[Location(7, File.F)] = Bishop(PieceColor.BLACK)
 
         # queens:
-        #pieces[Location(0, File.D)] = Queen(PieceColor.WHITE)
+        pieces[Location(0, File.D)] = Queen(PieceColor.WHITE)
         pieces[Location(7, File.D)] = Queen(PieceColor.BLACK)
 
         # kings:
