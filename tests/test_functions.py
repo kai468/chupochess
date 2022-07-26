@@ -1,6 +1,8 @@
 
 # run all tests via command line with command "python setup.py pytest" in home folder
 
+
+
 def test_pieceColor_Not():
     from chupochess.common import PieceColor
     white = PieceColor.WHITE
@@ -17,6 +19,34 @@ def test_LocationDictionary():
     dictionary[location] = "something"
     assert location in dictionary                           # test in operator (__contains()__)
     assert dictionary[location] == "something"              # test getter (__getitem()__)
+
+def test_King_inCheckDetection():
+    from chupochess.board import Board
+    from chupochess.common import PieceColor, Location, File
+    from itertools import filterfalse
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    
+    # get king:
+    kings = board.getPieceList(PieceColor.BLACK)
+    kings[:] = filterfalse(lambda piece : (piece.name != "K"), board.getPieceList(PieceColor.BLACK))
+    bKing = kings[0]
+    assert bKing.name == "K"        
+    assert bKing.isInCheck(board) == False
+    # attack King with Knight from G1:
+    makeMove("G1","F6")
+    assert bKing.isInCheck(board) == True
+    makeMove("F6","G1")
+    makeMove("E7","E3")
+    assert bKing.isInCheck(board) == False
+    makeMove("D1", "E3")
+    assert bKing.isInCheck(board) == True
+
 
 def test_King_getCastlingRights():
     from chupochess.board import Board
@@ -60,6 +90,12 @@ def test_King_getCastlingRights():
     # D3 -> C2 and H2 -> G3 to block/remove attackers:
     makeMove("D3", "C2")
     makeMove("H2", "G3")
+    assert len(wKing.getCastlingRights(board)) == 2
+    # castling not possible if king is in check:
+    makeMove("F2","F3")
+    assert len(wKing.getCastlingRights(board)) == 0
+    # remove check:
+    makeMove("G3", "D8")
     assert len(wKing.getCastlingRights(board)) == 2
     # move kingside rook: H1->H5
     makeMove("H1", "H5")

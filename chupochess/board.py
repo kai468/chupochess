@@ -9,7 +9,7 @@ class Board:
         self.locationSquareMap = LocationDictionary()
         self.whitePieces = []
         self.blackPieces = []
-        self.enPassantPossible = []         # TODO
+        self.enPassantPossible = []
         self.whiteKingLocation = Location(0, File.E)
         self.blackKingLocation = Location(7, File.E)
         pieces = PieceFactory.getPieces()
@@ -32,7 +32,6 @@ class Board:
             self.boardSquares.append(currentFile)
 
     def __str__(self) -> str:
-        # TODO: what would I use that function for? no information about pieces located on the board
         s = ""
         for file in range(8):
             for rank in range(8):
