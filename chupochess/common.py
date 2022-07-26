@@ -1,4 +1,6 @@
 from enum import Enum
+from typing import Tuple
+from typing_extensions import Self
 
 class PieceColor(Enum):
     WHITE = 0
@@ -42,6 +44,10 @@ class Location:
 
     def __str__(self) -> str:
         return str(self.file.name) + str(self.rank+1)
+
+    def offset(self, target: Self) -> Tuple[int,int]:   # return: (rankOffset, fileOffset)
+        return (target.rank - self.rank, target.file.value - self.file.value)
+        
 
 class LocationFactory:
     def __init__(self) -> None:

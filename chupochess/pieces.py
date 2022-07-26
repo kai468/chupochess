@@ -1,5 +1,6 @@
 from itertools import filterfalse
 from typing import List
+from typing_extensions import Self
 from chupochess.board import Board
 from chupochess.interfaces import MovableInterface
 from chupochess.common import PieceColor, Location, LocationFactory, File, LocationDictionary
@@ -23,6 +24,10 @@ class Piece:
         targetSquare.currentPiece = self
         targetSquare.isOccupied = True
         board.whiteToMove = not board.whiteToMove
+
+    def isPinnedBy(self, board: Board) -> Self:     # returns the "pinning" piece
+        kingLocation = board.getKingLocation(self.color)
+        # check if active piece is 
 
 class King(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -116,6 +121,21 @@ class King(Piece, MovableInterface):
 
     def _castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
         squareMap = board.locationSquareMap
+        # TODO: refactor: locations in 2nd/7th file are build multiple times (checked for king, then for pawns, then for bishop/rook/queen)
+        
+        # potential attacker: opponents king
+        offsets = [(-1,1),(0,1),(1,1)] if self.color == PieceColor.WHITE else [(-1,-1),(0,-1),(1,-1)]
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
+            if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "P" and squareMap[attackerLocation].currentPiece.color != self.color:
+                return True
+
+        # potential attacker: pawn 
+        offsets = [(-1,1),(1,1)] if self.color == PieceColor.WHITE else [(-1,-1),(1,-1)]
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, fileOffset + offset[0], offset[1])
+            if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "P" and squareMap[attackerLocation].currentPiece.color != self.color:
+                return True
 
         # potential attacker: knight -> offset: List[Tupel[file: int, rank: int]]
         offsets = [(-2,1),(-1,2),(1,2),(2,1)] if self.color == PieceColor.WHITE else [(2,-1),(1,-2),(-1,-2),(-2,-1)]    
@@ -143,6 +163,7 @@ class King(Piece, MovableInterface):
         
     
     def isInCheck(self, board: Board) -> bool:
+        # TODO: it would probably be more efficient to use the same algorithm as in _castlingSquareUnderAttack
         # check whether King is under immediate attack:
         for opponentPiece in (piece for piece in board.getPieceList(self.color.Not()) if piece.name != "K"):
             for location in (loc for loc in opponentPiece.getValidMoves(board) if loc == self.currentSquare.location):
@@ -241,7 +262,7 @@ class Rook(Piece, MovableInterface):
         if square == None: square = self.currentSquare
         squareMap = board.locationSquareMap
         offsets = [(-1,0), (1,0), (0, -1), (0,1)]
-        moveCandidates = []
+        moveCandidates = [] 	
         for offset in offsets:
             # explore the field in every possible direction (rankwise and filewise)
             next = LocationFactory.build(square.location, offset[0], offset[1])

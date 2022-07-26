@@ -20,6 +20,14 @@ def test_LocationDictionary():
     assert location in dictionary                           # test in operator (__contains()__)
     assert dictionary[location] == "something"              # test getter (__getitem()__)
 
+def test_Location_offset():
+    from chupochess.common import Location, File
+    location1 = Location(0, File.A)
+    location2 = Location(7, File.H)
+    location3 = Location(0, File.B)
+    assert location1.offset(location2) == (7,7)
+    assert location2.offset(location3) == (-7,-6)
+
 def test_King_inCheckDetection():
     from chupochess.board import Board
     from chupochess.common import PieceColor, Location, File

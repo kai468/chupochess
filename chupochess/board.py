@@ -13,6 +13,8 @@ class Board:
         self.whiteKingLocation = Location(0, File.E)
         self.blackKingLocation = Location(7, File.E)
         self.whiteToMove = True
+        self.pins = []
+        self.checks = []
         pieces = PieceFactory.getPieces()
         for file in range(8):
             currentFile = []
