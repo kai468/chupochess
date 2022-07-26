@@ -7,9 +7,12 @@ class Square:
         self.isOccupied = False
         self.currentPiece = None 
 
-    def reset(self) -> None:
+    def reset(self) -> object:
+        piece = self.currentPiece
         self.isOccupied = False
         self.currentPiece = None
+        return piece
+
 
     def __str__(self) -> str:
         return "Square{squareColor=" + str(self.squareColor.name) \

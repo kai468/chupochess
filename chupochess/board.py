@@ -77,6 +77,13 @@ class Board:
         else:
             return self.whiteKingLocation
 
+    def updatePieceList(self, piece: object) -> None:
+        if not piece: return
+        if piece.color == PieceColor.BLACK:
+            self.blackPieces.remove(piece)
+        elif piece.color == PieceColor.WHITE:
+            self.whitePieces.remove(piece)
+
             
 
 

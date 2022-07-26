@@ -68,3 +68,40 @@ def test_King_getCastlingRights():
     makeMove("E1", "D1")
     assert len(wKing.getCastlingRights(board)) == 0
 
+def test_Pawn_enPassant():
+    from chupochess.board import Board
+    from chupochess.common import PieceColor, Location, File
+    from itertools import filterfalse
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    
+    # do some moves to allow en passant capture by white:
+    makeMove("E2", "E5")
+    assert len(board.enPassantPossible) == 1
+    makeMove("A7", "A5")
+    assert len(board.enPassantPossible) == 1
+    makeMove("F1","D3")
+    assert len(board.enPassantPossible) == 0
+    makeMove("F7", "F5")
+    assert len(board.enPassantPossible) == 1
+    assert len(board.whitePieces) == 16
+    assert len(board.blackPieces) == 16
+    makeMove("E5", "F6")    # en passant capture
+    assert len(board.enPassantPossible) == 0
+    assert len(board.whitePieces) == 16
+    assert len(board.blackPieces) == 15
+    # same for black:
+    makeMove("H7", "H4")
+    makeMove("G2", "G4")
+    assert len(board.enPassantPossible) == 1
+    assert len(board.whitePieces) == 16
+    assert len(board.blackPieces) == 15
+    makeMove("H4", "G3")
+    assert len(board.enPassantPossible) == 0
+    assert len(board.whitePieces) == 15
+    assert len(board.blackPieces) == 15

@@ -16,6 +16,12 @@ class Piece:
             + ",currentSquare=" + str(self.currentSquare) \
             + ",color=" + str(self.color.name) + "}"
 
+    def _switchSquaresAndCapture(self, targetSquare: Square, board: Board) -> None:
+        self.currentSquare.reset()
+        self.currentSquare = targetSquare
+        board.updatePieceList(targetSquare.reset()) # make capture if there is sth to capture
+        targetSquare.currentPiece = self
+        targetSquare.isOccupied = True
 
 class King(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -62,15 +68,14 @@ class King(Piece, MovableInterface):
                 # long castle -> rook has to be moved from file A to D
                 rooks[:] = filterfalse(lambda piece : (piece.name != "R") or (piece.currentSquare.location != Location(self.currentSquare.location.rank, File.A)), rooks)
                 rooks[0].makeMove(board.locationSquareMap[Location(self.currentSquare.location.rank, File.D)], board)
-        self.currentSquare.reset()
-        self.currentSquare = square
         self.isFirstMove = False
-        square.currentPiece = self
-        square.isOccupied = True
+        self._switchSquaresAndCapture(square, board)
+
         if self.color == PieceColor.WHITE:
             board.whiteKingLocation = self.currentSquare.location
         else:
             board.blackKingLocation = self.currentSquare.location
+        board.enPassantPossible.clear()
 
     def getCastlingRights(self, board: Board) -> List[Location]:
         castlingRights = []
@@ -162,10 +167,8 @@ class Queen(Piece, MovableInterface):
         return defendedLocations
     
     def makeMove(self, square: Square, board: Board) -> None:
-        self.currentSquare.reset()
-        self.currentSquare = square
-        square.currentPiece = self
-        square.isOccupied = True
+        self._switchSquaresAndCapture(square, board)
+        board.enPassantPossible.clear()
 
 class Bishop(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -196,10 +199,8 @@ class Bishop(Piece, MovableInterface):
         return self.getValidMoves(board, square, True)
 
     def makeMove(self, square: Square, board: Board) -> None:
-        self.currentSquare.reset()
-        self.currentSquare = square
-        square.currentPiece = self
-        square.isOccupied = True
+        self._switchSquaresAndCapture(square, board)
+        board.enPassantPossible.clear()
 
 class Knight(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -225,10 +226,8 @@ class Knight(Piece, MovableInterface):
         return self.getValidMoves(board, True)
 
     def makeMove(self, square: Square, board: Board) -> None:
-        self.currentSquare.reset()
-        self.currentSquare = square
-        square.currentPiece = self
-        square.isOccupied = True
+        self._switchSquaresAndCapture(square, board)
+        board.enPassantPossible.clear()
 
 class Rook(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -260,11 +259,9 @@ class Rook(Piece, MovableInterface):
         return self.getValidMoves(board, square, True)
 
     def makeMove(self, square: Square, board: Board) -> None:
-        self.currentSquare.reset()
-        self.currentSquare = square
         self.isFirstMove = False
-        square.currentPiece = self
-        square.isOccupied = True
+        self._switchSquaresAndCapture(square, board)
+        board.enPassantPossible.clear()
         
 
 class Pawn(Piece,MovableInterface):
@@ -272,6 +269,7 @@ class Pawn(Piece,MovableInterface):
         Piece.__init__(self, color)
         self.name = "P"
         self.isFirstMove = True
+        self.enPassantPossible = False
 
     def getValidMoves(self, board: Board) -> List[Location]:
         rankOffset = 1 if self.color == PieceColor.WHITE else -1
@@ -291,7 +289,10 @@ class Pawn(Piece,MovableInterface):
         # captures are only allowed if opponent's piece: 
         moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == False), moveCandidates)
         moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == True) and (squareMap[candidate].currentPiece.color == self.color), moveCandidates)
-        # TODO: en passant captures 
+        # en passant captures:
+        for enPassant in board.enPassantPossible:
+            if (enPassant.color != self.color) and (enPassant.currentSquare.location in [LocationFactory.build(currentLocation, -1, 0), LocationFactory.build(currentLocation, 1, 0)]):
+                moveCandidates.append(LocationFactory.build(enPassant.currentSquare.location, 0, rankOffset))
         return moveCandidates
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
@@ -303,14 +304,24 @@ class Pawn(Piece,MovableInterface):
         defendedLocations[:] = filterfalse(lambda candidate : candidate not in board.locationSquareMap, defendedLocations)
         return defendedLocations
 
-
     def makeMove(self, square: Square, board: Board) -> None:
         if self.isFirstMove:
             self.isFirstMove = False
-        self.currentSquare.reset()
-        self.currentSquare = square
-        square.currentPiece = self
-        square.isOccupied = True
+            if abs(self.currentSquare.location.rank - square.location.rank) > 1:
+                self.enPassantPossible = True
+                board.enPassantPossible.clear()
+                board.enPassantPossible.append(self)        
+        # capture other pawn if en passant move:
+        if (len(board.enPassantPossible) > 0) and (square.location.file != self.currentSquare.location.file):
+            for enPassant in board.enPassantPossible:
+                if (enPassant.color != self.color) and (enPassant.currentSquare.location.file == square.location.file):
+                    board.updatePieceList(enPassant.currentSquare.reset())
+                    board.enPassantPossible.clear()
+                    break
+        self._switchSquaresAndCapture(square, board)
+        if not self in board.enPassantPossible:
+            board.enPassantPossible.clear()
+        
 
 
 class PieceFactory:

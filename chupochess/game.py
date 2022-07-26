@@ -39,7 +39,7 @@ class Game:
             # ######
                 fromSquare = board.locationSquareMap[Location(file=File(fromFile), rank=fromRank)]
                 toSquare = board.locationSquareMap[Location(file=File(toFile), rank=toRank)]
-
+                
                 fromSquare.currentPiece.makeMove(toSquare,board)
                 
                 validMoves = None
