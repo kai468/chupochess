@@ -27,7 +27,54 @@ class Piece:
 
     def isPinnedBy(self, board: Board) -> Self:     # returns the "pinning" piece
         kingLocation = board.getKingLocation(self.color)
-        # check if active piece is 
+        squareMap = board.locationSquareMap
+        # check if active piece is on a "attack path" relative to king:
+        locationOffset = kingLocation.offset(self.currentSquare.location)
+        if abs(locationOffset[0]) == abs(locationOffset[1]):
+            # possible attackers: B/Q -> TODO: test and refactor 
+            # check if first piece after king
+            offset = (int(locationOffset[0]/abs(locationOffset[0])), int(locationOffset[1]/abs(locationOffset[1])))
+            next = LocationFactory.build(kingLocation, offset[0], offset[1])
+            while next in squareMap:
+                if (squareMap[next].isOccupied == False) or (next == self.currentSquare.location):
+                    next = LocationFactory.build(next, offset[0], offset[1])
+                elif abs(kingLocation.offset(next)[0]) < abs(locationOffset[0]):
+                    # king is protected by other piece -> no pin!
+                    return None
+                elif squareMap[next].currentPiece.color == self.color:
+                    # ally found -> no pin!
+                    return None
+                elif (squareMap[next].currentPiece.color == self.color.Not()) and (squareMap[next].currentPiece.name not in ["B","Q"]):
+                    # potential attacker is blocked by other opponent piece -> no pin!
+                    return None
+                else: 
+                    # attacker found:
+                    return squareMap[next].currentPiece
+        elif (locationOffset[0] == 0 or locationOffset[1] == 0):
+            # TODO: possible attackers: R/Q
+            relevantIndex = 0 if locationOffset[1] == 0 else 1
+            fileOffset = 0 if relevantIndex == 1 else int(locationOffset[0]/abs(locationOffset[0]))
+            rankOffset = 0 if relevantIndex == 0 else int(locationOffset[1]/abs(locationOffset[1]))
+            offset = (fileOffset, rankOffset)
+            next = LocationFactory.build(kingLocation, offset[0], offset[1])
+            while next in squareMap:
+                if (squareMap[next].isOccupied == False) or (next == self.currentSquare.location):
+                    next = LocationFactory.build(next, offset[0], offset[1])
+                elif abs(kingLocation.offset(next)[relevantIndex]) < abs(locationOffset[relevantIndex]): 
+                    # king is protected by other piece -> no pin!
+                    return None
+                elif squareMap[next].currentPiece.color == self.color:
+                    # ally found -> no pin!
+                    return None
+                elif (squareMap[next].currentPiece.color == self.color.Not()) and (squareMap[next].currentPiece.name not in ["R","Q"]):
+                    # potential attacker is blocked by other opponent piece -> no pin!
+                    return None
+                else: 
+                    # attacker found:
+                    return squareMap[next].currentPiece
+        else:
+            return None
+
 
 class King(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:

@@ -45,8 +45,8 @@ class Location:
     def __str__(self) -> str:
         return str(self.file.name) + str(self.rank+1)
 
-    def offset(self, target: Self) -> Tuple[int,int]:   # return: (rankOffset, fileOffset)
-        return (target.rank - self.rank, target.file.value - self.file.value)
+    def offset(self, target: Self) -> Tuple[int,int]:   # return: (fileOffset, rankOffset)
+        return (target.file.value - self.file.value, target.rank - self.rank)
         
 
 class LocationFactory:

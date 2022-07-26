@@ -26,7 +26,43 @@ def test_Location_offset():
     location2 = Location(7, File.H)
     location3 = Location(0, File.B)
     assert location1.offset(location2) == (7,7)
-    assert location2.offset(location3) == (-7,-6)
+    assert location2.offset(location3) == (-6,-7)
+
+def test_Piece_isPinnedBy_Bishop():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    makeMove("E1", "E4")
+    makeMove("D2", "D5")
+    pawn = board.locationSquareMap[Location(4, File.D)].currentPiece
+    assert pawn.isPinnedBy(board) == None
+    makeMove("C8", "B7")
+    assert pawn.isPinnedBy(board).name == "B"
+
+def test_Piece_isPinnedBy_Rook():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    makeMove("E8", "E6")
+    makeMove("G8", "F6")
+    knight = board.locationSquareMap[Location(5, File.F)].currentPiece
+    assert knight.isPinnedBy(board) == None
+    makeMove("A1", "H6")
+    assert knight.isPinnedBy(board).name == "R"
+    makeMove("G7","G6")
+    assert knight.isPinnedBy(board) == None
 
 def test_King_inCheckDetection():
     from chupochess.board import Board
