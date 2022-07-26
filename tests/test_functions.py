@@ -47,6 +47,23 @@ def test_King_inCheckDetection():
     makeMove("D1", "E3")
     assert bKing.isInCheck(board) == True
 
+def test_board_whiteToMove():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+
+    assert board.whiteToMove == True
+    makeMove("E2", "E4")
+    assert board.whiteToMove == False
+    makeMove("E7", "E5")
+    assert board.whiteToMove == True
+
 
 def test_King_getCastlingRights():
     from chupochess.board import Board

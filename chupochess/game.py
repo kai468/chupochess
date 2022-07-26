@@ -7,7 +7,6 @@ class Game:
     def __init__(self):
         pass
     def main(self) -> None:
-        # TODO: inputs/gameplay
         # TODO: checkmate detection + draw detection
         # TODO: GUI
         board = Board()

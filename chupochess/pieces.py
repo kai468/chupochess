@@ -22,6 +22,7 @@ class Piece:
         board.updatePieceList(targetSquare.reset()) # make capture if there is sth to capture
         targetSquare.currentPiece = self
         targetSquare.isOccupied = True
+        board.whiteToMove = not board.whiteToMove
 
 class King(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
