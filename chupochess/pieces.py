@@ -26,7 +26,6 @@ class Piece:
         board.whiteToMove = not board.whiteToMove
 
     def isPinnedBy(self, board: Board, square: Square = None) -> Self:     # returns the "pinning" piece
-        # TODO: use this is move decision!
         if square == None: square = self.currentSquare
         kingLocation = board.getKingLocation(self.color)
         squareMap = board.locationSquareMap
@@ -265,7 +264,7 @@ class Bishop(Piece, MovableInterface):
                 # TODO: this became horribly unreadable -> refactor!
         return moveCandidates
 
-    def _limitMovementPinnedBishop(attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
+    def _limitMovementPinnedBishop(self, attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
         norm = (int(attackerOffset[0]/abs(attackerOffset[0])),int(attackerOffset[1]/abs(attackerOffset[1])))
         inv = (-norm[0], -norm[1])
         return (norm, inv)
@@ -283,7 +282,6 @@ class Knight(Piece, MovableInterface):
         self.name = "N"
 
     def getValidMoves(self, board: Board, includeDefendedLocations: bool = False) -> List[Location]:
-        # TODO: add isPinnedBy verification
         moveCandidates = []
         squareMap = board.locationSquareMap
         offsets = [(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1)]
@@ -315,7 +313,6 @@ class Rook(Piece, MovableInterface):
         self.isFirstMove = True
 
     def getValidMoves(self, board: Board, square: Square = None, includeDefendedLocations: bool = False) -> List[Location]:
-        # TODO: add isPinnedBy verification
         if square == None: square = self.currentSquare
         squareMap = board.locationSquareMap
         offsets = [(-1,0), (1,0), (0, -1), (0,1)]
@@ -333,6 +330,19 @@ class Rook(Piece, MovableInterface):
                     break
                 moveCandidates.append(next)
                 next = LocationFactory.build(next, offset[0], offset[1])
+        # check if piece is pinned:
+        attacker = self.isPinnedBy(board, square)
+        if attacker:
+            attackerOffset = square.location.offset(attacker.currentSquare.location)
+            if 0 in attackerOffset: 
+                # attacker on same rank or file -> limited movement possible
+                # (only in direction of offset or in inverse direction)
+                noMovementIndex = 0 if attackerOffset[0] == 0 else 1
+                moveCandidates[:] = filterfalse(lambda candidate : candidate.offset(square.location)[noMovementIndex] != 0, moveCandidates)
+                # TODO: this became horribly unreadable -> refactor!
+            else:
+                # attacker attacking diagonally -> no movement possible
+                moveCandidates.clear()
         return moveCandidates
 
     def getDefendedLocations(self, board: Board, square: Square = None) -> List[Location]:
@@ -345,6 +355,7 @@ class Rook(Piece, MovableInterface):
         
 
 class Pawn(Piece,MovableInterface):
+    # TODO: pawn promotion
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
         self.name = "P"
@@ -352,7 +363,6 @@ class Pawn(Piece,MovableInterface):
         self.enPassantPossible = False
 
     def getValidMoves(self, board: Board) -> List[Location]:
-        # TODO: add isPinnedBy verification
         rankOffset = 1 if self.color == PieceColor.WHITE else -1
         currentLocation = self.currentSquare.location
         squareMap = board.locationSquareMap
@@ -374,7 +384,26 @@ class Pawn(Piece,MovableInterface):
         for enPassant in board.enPassantPossible:
             if (enPassant.color != self.color) and (enPassant.currentSquare.location in [LocationFactory.build(currentLocation, -1, 0), LocationFactory.build(currentLocation, 1, 0)]):
                 moveCandidates.append(LocationFactory.build(enPassant.currentSquare.location, 0, rankOffset))
+        # check if pawn is pinned:
+        attacker = self.isPinnedBy(board)
+        if attacker:
+            attackerOffset = currentLocation.offset(attacker.currentSquare.location)
+            if attackerOffset[1] == 0 :
+                # attacker on same rank -> no movement possible
+                moveCandidates.clear()
+            elif attackerOffset[0] == 0:
+                # attacker on same file -> limited movement possible
+                pass # filterfalse -> everything with a file offset
+                moveCandidates[:] = filterfalse(lambda candidate : candidate.offset(currentLocation)[0] != 0, moveCandidates)
+            else:
+                # attacker on the same diagonal -> limited movement possible (only captures in the right direction)
+                 moveCandidates[:] = filterfalse(lambda candidate : (candidate.offset(currentLocation)[0],candidate.offset(currentLocation)[1]) not in self._limitMovementPinnedPawn(attackerOffset), moveCandidates)
         return moveCandidates
+
+    def _limitMovementPinnedPawn(self, attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
+        norm = (int(attackerOffset[0]/abs(attackerOffset[0])),int(attackerOffset[1]/abs(attackerOffset[1])))
+        inv = (-norm[0], -norm[1])
+        return (norm, inv)
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
         currentLocation = self.currentSquare.location

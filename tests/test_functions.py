@@ -3,6 +3,9 @@
 
 
 
+from re import T
+
+
 def test_pieceColor_Not():
     from chupochess.common import PieceColor
     white = PieceColor.WHITE
@@ -45,6 +48,43 @@ def test_Piece_isPinnedBy_Bishop():
     makeMove("C8", "B7")
     assert pawn.isPinnedBy(board).name == "B"
 
+def test_Rook_isPinnedBy_Rook():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    makeMove("E8", "B6")
+    makeMove("H8", "F6")
+    rook = board.locationSquareMap[Location(5, File.F)].currentPiece
+    assert rook.isPinnedBy(board) == None
+    assert len(rook.getValidMoves(board)) > 5
+    makeMove("D1", "H6")
+    assert rook.isPinnedBy(board).name == "Q"
+    assert len(rook.getValidMoves(board)) == 5
+
+def test_Queen_isPinnedBy_Bishop():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    makeMove("D1","D2")
+    queen = board.locationSquareMap[Location(1, File.D)].currentPiece
+    assert queen.isPinnedBy(board) == None
+    assert len(queen.getValidMoves(board)) > 5
+    makeMove("F8","C3")
+    assert queen.isPinnedBy(board).name == "B"
+    assert len(queen.getValidMoves(board)) == 1
+
 def test_Piece_isPinnedBy_Rook():
     from chupochess.board import Board
     from chupochess.common import Location, File
@@ -66,6 +106,72 @@ def test_Piece_isPinnedBy_Rook():
     makeMove("G7","G6")
     assert knight.isPinnedBy(board) == None
     assert len(knight.getValidMoves(board)) > 0
+
+def test_Pawn_isPinnedBy_Rook_File():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    makeMove("E2", "E3")
+    makeMove("D7", "D4")
+    makeMove("F7", "F4")
+    pawn = board.locationSquareMap[Location(2, File.E)].currentPiece
+    assert pawn.isPinnedBy(board) == None
+    assert len(pawn.getValidMoves(board)) == 3
+    makeMove("H8","E6")
+    assert pawn.isPinnedBy(board).name == "R"
+    assert len(pawn.getValidMoves(board)) == 1
+    makeMove("E6","E4")
+    assert pawn.isPinnedBy(board).name == "R"
+    assert len(pawn.getValidMoves(board)) == 0
+
+def test_Pawn_isPinnedBy_Rook_Rank():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    makeMove("E8", "C5")
+    makeMove("E7", "E5")
+    pawn = board.locationSquareMap[Location(4, File.E)].currentPiece
+    assert pawn.isPinnedBy(board) == None
+    assert len(pawn.getValidMoves(board)) == 1
+    makeMove("D1", "G5")
+    assert pawn.isPinnedBy(board).name == "Q"
+    assert len(pawn.getValidMoves(board)) == 0
+
+def test_Pawn_isPinnedBy_Bishop():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    pawn = board.locationSquareMap[Location(6, File.D)].currentPiece
+    assert pawn.isPinnedBy(board) == None
+    makeMove("F1", "B5")
+    assert pawn.isPinnedBy(board).name == "B"
+    assert len(pawn.getValidMoves(board)) == 0
+    makeMove("C1", "E6")
+    assert pawn.isPinnedBy(board).name == "B"
+    assert len(pawn.getValidMoves(board)) == 0
+    makeMove("B5", "C6")
+    assert pawn.isPinnedBy(board).name == "B"
+    assert len(pawn.getValidMoves(board)) == 1
+    
+
 
 def test_King_inCheckDetection():
     from chupochess.board import Board
