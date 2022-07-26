@@ -48,7 +48,6 @@ class Board:
         for rank in range(7,-1,-1):
             sOut = str(rank + 1) + " "
             for file in range(8):
-                # TODO: mark Valid Moves red
                 if self.boardSquares[file][rank].isOccupied:
                     piece = self.boardSquares[file][rank].currentPiece
                     if (validMoves is not None) and (Location(rank, File(file)) in validMoves):   
