@@ -355,7 +355,6 @@ class Rook(Piece, MovableInterface):
         
 
 class Pawn(Piece,MovableInterface):
-    # TODO: pawn promotion
     def __init__(self, color: PieceColor) -> None:
         Piece.__init__(self, color)
         self.name = "P"
@@ -415,6 +414,7 @@ class Pawn(Piece,MovableInterface):
         return defendedLocations
 
     def makeMove(self, square: Square, board: Board) -> None:
+        # TODO: pawn promotion
         if self.isFirstMove:
             self.isFirstMove = False
             if abs(self.currentSquare.location.rank - square.location.rank) > 1:
@@ -428,9 +428,28 @@ class Pawn(Piece,MovableInterface):
                     board.updatePieceList(enPassant.currentSquare.reset())
                     board.enPassantPossible.clear()
                     break
-        self._switchSquaresAndCapture(square, board)
+        if self._isPawnPromotionMove(square, board):
+            self._promotePawn(square, board)
+        else:
+            self._switchSquaresAndCapture(square, board)
         if not self in board.enPassantPossible:
             board.enPassantPossible.clear()
+
+    def _isPawnPromotionMove(self, targetSquare: Square, board: Board) -> bool:
+        if self.color == PieceColor.WHITE:
+            return (targetSquare.location.rank == 7)
+        else:
+            return (targetSquare.location.rank == 0)
+
+    def _promotePawn(self, targetSquare: Square, board: Board, cls: Piece = Queen):
+        # TODO: interface for really choosing the cls -> e.g. promoting to a Knight, too
+        board.updatePieceList(self.currentSquare.reset())
+        promotedPiece = cls(self.color)
+        promotedPiece.currentSquare = targetSquare
+        targetSquare.currentPiece = promotedPiece
+        targetSquare.isOccupied = True
+        board.whiteToMove = not board.whiteToMove
+        board.whitePieces.append(promotedPiece)
         
 
 

@@ -31,6 +31,41 @@ def test_Location_offset():
     assert location1.offset(location2) == (7,7)
     assert location2.offset(location3) == (-6,-7)
 
+def test_Pawn_promotion():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    def cntPieces(lst: object, name: str) -> int:
+        cnt = 0
+        for o in lst:
+            if o.name == name:
+                cnt+=1
+        return cnt
+    makeMove("G8", "F6")
+    makeMove("G7", "H6")
+    makeMove("G2", "G7")
+    assert len(board.blackPieces) == 16
+    assert len(board.whitePieces) == 16
+    assert cntPieces(board.whitePieces, "P") == 8
+    assert cntPieces(board.blackPieces, "P") == 8
+    assert cntPieces(board.whitePieces, "Q") == 1
+    assert cntPieces(board.blackPieces, "Q") == 1
+    makeMove("G7","G8")
+    assert len(board.blackPieces) == 16
+    assert len(board.whitePieces) == 16
+    assert cntPieces(board.whitePieces, "P") == 7
+    assert cntPieces(board.blackPieces, "P") == 8
+    assert cntPieces(board.whitePieces, "Q") == 2
+    assert cntPieces(board.blackPieces, "Q") == 1
+
+
+
 def test_Piece_isPinnedBy_Bishop():
     from chupochess.board import Board
     from chupochess.common import Location, File

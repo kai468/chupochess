@@ -43,9 +43,4 @@ class Game:
                 
                 validMoves = None
 
-
-
-    #def printPiece(self, piece: MovableInterface):
-    #    piece.getValidMoves(self.board)
-
     
