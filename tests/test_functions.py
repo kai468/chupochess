@@ -64,6 +64,25 @@ def test_Pawn_promotion():
     assert cntPieces(board.whitePieces, "Q") == 2
     assert cntPieces(board.blackPieces, "Q") == 1
 
+def test_Pawn_dontCaptureAlly():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    pawn = board.locationSquareMap[Location(1, File.D)].currentPiece
+    assert len(pawn.getValidMoves(board)) == 2
+    makeMove("D2","D3")
+    assert len(pawn.getValidMoves(board)) == 1
+    makeMove("C2","C4")
+    assert len(pawn.getValidMoves(board)) == 1
+    makeMove("C7", "C4")
+    assert len(pawn.getValidMoves(board)) == 2
+
 
 
 def test_Piece_isPinnedBy_Bishop():

@@ -371,14 +371,20 @@ class Pawn(Piece,MovableInterface):
             moveCandidates.append(LocationFactory.build(currentLocation, 0, 2*rankOffset))
         moveCandidates.append(LocationFactory.build(currentLocation, 1, rankOffset))
         moveCandidates.append(LocationFactory.build(currentLocation, -1, rankOffset))
-        # filter out locations that are not on the board:
-        moveCandidates[:] = filterfalse(lambda candidate : candidate not in squareMap, moveCandidates)
-        # move logic:
-        # same-file moves (no capture) are only allowed if not blocked by other piece:
-        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file == currentLocation.file) and (squareMap[candidate].isOccupied == True), moveCandidates)
-        # captures are only allowed if opponent's piece: 
-        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == False), moveCandidates)
-        moveCandidates[:] = filterfalse(lambda candidate : (candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == True) and (squareMap[candidate].currentPiece.color == self.color), moveCandidates)
+        # move Logic:
+        # a) filter out locations that are not on the board
+        # b) same-file moves (no capture) are not allowed if blocked by other piece
+        # c) file-crossing moves are not allowed if there is no piece to capture
+        # d) captures are only allowed if it's an opponent's piece
+        moveCandidates[:] = filterfalse(lambda candidate: \
+            True if (candidate not in squareMap) else (
+                True if ((candidate.file == currentLocation.file) and squareMap[candidate].isOccupied) else (
+                    True if ((candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == False)) else (
+                        True if ((candidate.file != currentLocation.file) and (squareMap[candidate].isOccupied == True) and (squareMap[candidate].currentPiece.color == self.color)) else False
+                    )
+                )
+            ), moveCandidates)
+
         # en passant captures:
         for enPassant in board.enPassantPossible:
             if (enPassant.color != self.color) and (enPassant.currentSquare.location in [LocationFactory.build(currentLocation, -1, 0), LocationFactory.build(currentLocation, 1, 0)]):
@@ -414,7 +420,6 @@ class Pawn(Piece,MovableInterface):
         return defendedLocations
 
     def makeMove(self, square: Square, board: Board) -> None:
-        # TODO: pawn promotion
         if self.isFirstMove:
             self.isFirstMove = False
             if abs(self.currentSquare.location.rank - square.location.rank) > 1:
