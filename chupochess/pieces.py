@@ -197,7 +197,7 @@ class King(Piece, MovableInterface):
         
     
     def isInCheck(self, board: Board) -> bool:
-        # TODO: it would probably be more efficient to use the same algorithm as in _castlingSquareUnderAttack
+        # TODO: it would probably be more performant to use the same algorithm as in _castlingSquareUnderAttack
         # check whether King is under immediate attack:
         for opponentPiece in (piece for piece in board.getPieceList(self.color.Not()) if piece.name != "K"):
             for location in (loc for loc in opponentPiece.getValidMoves(board) if loc == self.currentSquare.location):
@@ -260,8 +260,10 @@ class Bishop(Piece, MovableInterface):
             else:
                 # attacker on the same diagonal -> limited movement possible
                 # (only in direction of offset or in inverse direction)
-                moveCandidates[:] = filterfalse(lambda candidate : (int(candidate.offset(square.location)[0]/abs(candidate.offset(square.location)[0])),candidate.offset(square.location)[1]/abs(candidate.offset(square.location)[1])) not in self._limitMovementPinnedBishop(attackerOffset), moveCandidates)
-                # TODO: this became horribly unreadable -> refactor!
+                moveCandidates[:] = filterfalse(lambda candidate : \
+                    (int(candidate.offset(square.location)[0]/abs(candidate.offset(square.location)[0])),
+                    candidate.offset(square.location)[1]/abs(candidate.offset(square.location)[1])) 
+                    not in self._limitMovementPinnedBishop(attackerOffset), moveCandidates)
         return moveCandidates
 
     def _limitMovementPinnedBishop(self, attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
@@ -339,7 +341,6 @@ class Rook(Piece, MovableInterface):
                 # (only in direction of offset or in inverse direction)
                 noMovementIndex = 0 if attackerOffset[0] == 0 else 1
                 moveCandidates[:] = filterfalse(lambda candidate : candidate.offset(square.location)[noMovementIndex] != 0, moveCandidates)
-                # TODO: this became horribly unreadable -> refactor!
             else:
                 # attacker attacking diagonally -> no movement possible
                 moveCandidates.clear()
@@ -397,8 +398,7 @@ class Pawn(Piece,MovableInterface):
                 # attacker on same rank -> no movement possible
                 moveCandidates.clear()
             elif attackerOffset[0] == 0:
-                # attacker on same file -> limited movement possible
-                pass # filterfalse -> everything with a file offset
+                # attacker on same file -> limited movement possible (only on same file)
                 moveCandidates[:] = filterfalse(lambda candidate : candidate.offset(currentLocation)[0] != 0, moveCandidates)
             else:
                 # attacker on the same diagonal -> limited movement possible (only captures in the right direction)
