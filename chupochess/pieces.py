@@ -74,13 +74,15 @@ class King(Piece, MovableInterface):
 
     def getValidMoves(self, board: Board) -> List[Location]:
         moveCandidates = []
-        moveCandidates.extend(self.bishop.getValidMoves(board, self.currentSquare))     
-        moveCandidates.extend(self.rook.getValidMoves(board, self.currentSquare))      
-        # filter if abs() > 1:
-        moveCandidates[:] = filterfalse(lambda candidate : (abs(candidate.file.value - self.currentSquare.location.file.value) > 1) or (abs(candidate.rank - self.currentSquare.location.rank) > 1), moveCandidates)
+        offsets = [(0, 1), (1, 1), (1, 0), (1, -1), (0,-1), (-1, -1), (-1, 0), (-1, 1)]
+        for offset in offsets:
+            moveCandidates.append(LocationFactory.build(self.currentSquare.location, offset[0], offset[1]))
+        # filter locations that are not on the board:
+        moveCandidates[:] = filterfalse(lambda candidate : candidate not in board.locationSquareMap, moveCandidates)
+        # filter locations that are blocked by ally pieces:
+        moveCandidates[:] = filterfalse(lambda candidate : (board.locationSquareMap[candidate].isOccupied) and (board.locationSquareMap[candidate].currentPiece.color == self.color), moveCandidates)
         moveCandidates.extend(self.getCastlingRights(board))
         # "in check" detection for move candidates: 
-        #if checkDetection:
         locationsUnderAttack = []
         # TODO: there must be a more efficient way to do the following
         for opponentPiece in board.getPieceList(self.color.Not()):
@@ -90,9 +92,11 @@ class King(Piece, MovableInterface):
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
         defendedLocations = []
-        defendedLocations.extend(self.bishop.getDefendedLocations(board, self.currentSquare))
-        defendedLocations.extend(self.rook.getDefendedLocations(board, self.currentSquare))
-        defendedLocations[:] = filterfalse(lambda candidate : (abs(candidate.file.value - self.currentSquare.location.file.value) > 1) or (abs(candidate.rank - self.currentSquare.location.rank) > 1), defendedLocations)
+        offsets = [(0, 1), (1, 1), (1, 0), (1, -1), (0,-1), (-1, -1), (-1, 0), (-1, 1)]
+        for offset in offsets:
+            defendedLocations.append(LocationFactory.build(self.currentSquare.location, offset[0], offset[1]))
+        # filter locations that are not on the board:
+        defendedLocations[:] = filterfalse(lambda candidate : candidate not in board.locationSquareMap, defendedLocations)
         return defendedLocations
 
     def makeMove(self, square: Square, board: Board) -> None:

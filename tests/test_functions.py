@@ -365,3 +365,42 @@ def test_Pawn_enPassant():
     assert len(board.enPassantPossible) == 0
     assert len(board.whitePieces) == 15
     assert len(board.blackPieces) == 15
+
+
+def test_possibleMoves_allPieces():
+    from typing import Tuple
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    def countPossibleMoves() -> Tuple[int, int]:
+        cntPieces = 0
+        cntMoves = 0
+        for piece in board.whitePieces:
+            cntMoves += len(piece.getValidMoves(board))
+            cntPieces += 1
+        for piece in board.blackPieces:
+            cntMoves += len(piece.getValidMoves(board))
+            cntPieces += 1
+        return (cntPieces, cntMoves)
+
+    assert countPossibleMoves() == (32, 40)
+    makeMove("H2", "H3")
+    assert countPossibleMoves() == (32, 39)
+    makeMove("E7","E6")
+    assert countPossibleMoves() == (32, 49)
+    makeMove("B1", "A3")
+    assert countPossibleMoves() == (32, 49)
+    makeMove("F8", "C5")
+    assert countPossibleMoves() == (32, 53)
+    makeMove("D2", "D4")
+    assert countPossibleMoves() == (32, 59)
+    makeMove("G8", "F6")
+    assert countPossibleMoves() == (32, 59)
+    makeMove("D4", "C5")
+    assert countPossibleMoves() == (31, 55)

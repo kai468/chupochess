@@ -16,9 +16,9 @@ class Game:
         validMoves = None
 
         while True:
-            board.printBoard(validMoves=validMoves)
+            board.printBoard(validMoves)
             #input format: A2->A3
-            move = input()
+            move = input()   
             # TODO: refactor the following part:
             if move[0] == 's':
                 # show possible moves
