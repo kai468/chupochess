@@ -1,4 +1,4 @@
-from chupochess.common import Location, SquareColor, File, PieceColor, LocationDictionary
+from chupochess.common import Location, SquareColor, File, PieceColor, LocationDictionary, GameState
 from chupochess.squares import Square
 from typing import List
 
@@ -16,6 +16,7 @@ class Board:
         self.pins = []
         self.checks = []
         pieces = PieceFactory.getPieces()
+        self.gameState = GameState.RUNNING
         for file in range(8):
             currentFile = []
             for rank in range(8):
@@ -94,7 +95,56 @@ class Board:
         for piece in self.blackPieces:
             setup[str(piece.currentSquare.location)] = "b" + piece.name
         return setup
-            
+
+    def updateGameState(self) -> None:
+        # TODO: performance point of view: probably it's best to first check if the king has any valid moves
+        color = PieceColor.WHITE if self.whiteToMove else PieceColor.BLACK
+        king = self.locationSquareMap[self.getKingLocation(color)].currentPiece
+        kingMoves = king.getValidMoves(self)
+
+        if self._isInsufficientMaterial(): 
+            self.gameState = GameState.DRAW
+        elif len(kingMoves) > 0:                                    # for performance reasons 
+            return        
+        elif len(king.isInCheck(self)) >= 2:                             # 2 opponent pieces attacking and no valid moves
+            self.gameState = GameState(color.Not().value + 2)       # checkmate - opponent team wins
+        else:
+            # two relevant cases: 
+            # a) one attacking piece, (no king moves), no other piece to block the attack -> checkmate
+            # b) stalemate: not in check but no legal moves -> draw
+            for piece in self.getPieceList(color):
+                if len(piece.getValidMoves(self)) > 0: 
+                    return                                          # for performance reasons 
+            if len(king.isInCheck(self)) > 0:
+                self.gameState = GameState(color.Not().value + 2)   # checkmate - opponent team wins
+            else:
+                self.gameState = GameState.DRAW                     # stalemate: not in check but no legal moves
+
+        # TODO: missing for draw: threefold/fivefold repetition and fifty-move rule / seventy-five-move rule
+
+    def _isInsufficientMaterial(self) -> bool:
+        if len(self.whitePieces) > 2 or len(self.blackPieces) > 2:
+            return False
+        elif len(self.whitePieces) == 1 and len(self.blackPieces) == 1:
+            return True
+        else:
+            # check for pieces other than king, bishop and knight:
+            for piece in self.whitePieces:
+                if piece.name not in ["K", "B", "N"]:
+                    return False
+            for piece in self.blackPieces: 
+                if piece.name not in ["K", "B", "N"]:
+                    return False
+            return True
+        
+
+
+                
+
+
+# TODO: checkmate detection + draw detection
+# -> maybe use the defended locations in case of a check with no possible king movements -> see if the 
+#   attacked path can be blocked or the attacker can be captured (if only one attacker) 
 
 
 

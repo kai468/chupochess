@@ -62,6 +62,43 @@ class Piece:
                 # attacker found:
                 return squareMap[next].currentPiece
 
+    def _getGlobalValidMoves(self, moves: List[Location], board: Board) -> List[Location]:
+        # verifies if the king is in check and returns the list of valid moves from a global point of view
+        king = board.locationSquareMap[board.getKingLocation(self.color)].currentPiece
+        inCheck = king.isInCheck(board)         
+        if len(inCheck) == 0:
+            return moves       
+        elif len(inCheck) >= 2:      
+            return []           # attack can't be blocked - king has to move (if possible) 
+        else:       
+            newMoves = []
+            attacker = board.locationSquareMap[inCheck[0]].currentPiece
+            # if attacker is a Pawn or Knight, the attack can only be blocked by capturing it:
+            if attacker.name in ["N", "P"] and inCheck[0] in moves:
+                newMoves.append(inCheck[0])
+                return newMoves
+            elif attacker.name in ["N", "P"]:
+                return newMoves    
+            # for all other attackers: capturing and moving in between attacker and king are valid moves:
+            # captures:
+            if inCheck[0] in moves:
+                newMoves.append(inCheck[0])
+            attackerOffset = king.currentSquare.location.offset(inCheck[0])
+            if 0 in attackerOffset:
+                # attacker rook/queen in same file / rank -> legal moves only differ in one index:
+                relevantIndex = 0 if attackerOffset[1] == 0 else 1
+                for move in moves:
+                    if (board.locationSquareMap[move].isOccupied == False) and ((king.currentSquare.location.offset(move)[relevantIndex]>0)^(inCheck[0].offset(move)[relevantIndex]>0)):
+                        newMoves.append(move)
+            else:
+                #attacker bishop/queen in same diagonal -> legal moves
+                for move in moves:
+                    if (board.locationSquareMap[move].isOccupied == False):
+                        offset = king.currentSquare.location.offset(move)
+                        if (abs(offset[0]) == abs(offset[1])) and (abs(offset[0]) < abs(attackerOffset[0])) and ((offset[0]>0)^(attackerOffset[0]>0)) and ((offset[1]>0)^(attackerOffset[1]>0)):
+                            newMoves.append(move)
+            return newMoves
+
 
 class King(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -152,7 +189,7 @@ class King(Piece, MovableInterface):
                         fileOffset = -2     # king's target position is relevant for the Location
                     castlingRights.append(LocationFactory.build(self.currentSquare.location, fileOffset, 0)) 
         # no castling if king is in check:
-        if self.isInCheck(board):
+        if len(self.isInCheck(board)) > 0:
             castlingRights.clear()
         self.castlingRights = castlingRights
         return castlingRights
@@ -200,13 +237,48 @@ class King(Piece, MovableInterface):
         return False
         
     
-    def isInCheck(self, board: Board) -> bool:
+    def isInCheck(self, board: Board) -> List[Location]: #returns locations of immediate attackers (0, 1 or 2)
         # TODO: it would probably be more performant to use the same algorithm as in _castlingSquareUnderAttack
+        # + it's not only more performant, also the current algorithm does not support one edge case:
+        #   if e.g. queen and bishop or two rooks are aligned and both attacking the king from the same side,
+        #   it would be possible to block the attack without moving the king -> this should not be counted as a 2! 
         # check whether King is under immediate attack:
-        for opponentPiece in (piece for piece in board.getPieceList(self.color.Not()) if piece.name != "K"):
-            for location in (loc for loc in opponentPiece.getValidMoves(board) if loc == self.currentSquare.location):
-                return True
-        return False
+        attackers = []
+        squareMap = board.locationSquareMap
+        # potential attacker: pawn 
+        offsets = [(-1,1),(1,1)] if self.color == PieceColor.WHITE else [(-1,-1),(1,-1)]
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "P" and squareMap[attackerLocation].currentPiece.color != self.color:
+                attackers.append(attackerLocation)
+
+        # potential attacker: knight -> offset: List[Tupel[file: int, rank: int]]
+        offsets = [(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1)]    
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "N" and squareMap[attackerLocation].currentPiece.color != self.color:
+                attackers.append(attackerLocation)
+
+        # potential attacker: rook/queen/bishop -> offset: List[Tupel[file: int, rank: int, relevantAttackers: List[str]]]
+        offsets = [
+            (1,1,["B","Q"]),
+            (1,-1,["B","Q"]),
+            (-1,1,["B","Q"]),
+            (-1,-1,["B","Q"]),
+            (0,1,["R","Q"]),
+            (0,-1,["R","Q"]),
+            (1,0,["R","Q"]),
+            (-1,0,["R","Q"])
+        ]
+        for offset in offsets:
+            attackerLocation = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            while attackerLocation in squareMap:
+                if squareMap[attackerLocation].isOccupied:
+                    if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in offset[2]):
+                        attackers.append(attackerLocation)
+                    break
+                attackerLocation = LocationFactory.build(attackerLocation, offset[0], offset[1])
+        return attackers
 
 class Queen(Piece, MovableInterface):
     def __init__(self, color: PieceColor) -> None:
@@ -268,7 +340,7 @@ class Bishop(Piece, MovableInterface):
                     (int(candidate.offset(square.location)[0]/abs(candidate.offset(square.location)[0])),
                     candidate.offset(square.location)[1]/abs(candidate.offset(square.location)[1])) 
                     not in self._limitMovementPinnedBishop(attackerOffset), moveCandidates)
-        return moveCandidates
+        return self._getGlobalValidMoves(moveCandidates, board)
 
     def _limitMovementPinnedBishop(self, attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
         norm = (int(attackerOffset[0]/abs(attackerOffset[0])),int(attackerOffset[1]/abs(attackerOffset[1])))
@@ -303,7 +375,7 @@ class Knight(Piece, MovableInterface):
                     moveCandidates.append(next)
                 elif includeDefendedLocations:
                     moveCandidates.append(next)
-        return moveCandidates
+        return self._getGlobalValidMoves(moveCandidates, board)
 
     def getDefendedLocations(self, board: Board) -> List[Location]:
         return self.getValidMoves(board, True)
@@ -348,7 +420,7 @@ class Rook(Piece, MovableInterface):
             else:
                 # attacker attacking diagonally -> no movement possible
                 moveCandidates.clear()
-        return moveCandidates
+        return self._getGlobalValidMoves(moveCandidates, board)
 
     def getDefendedLocations(self, board: Board, square: Square = None) -> List[Location]:
         return self.getValidMoves(board, square, True)
@@ -407,7 +479,7 @@ class Pawn(Piece,MovableInterface):
             else:
                 # attacker on the same diagonal -> limited movement possible (only captures in the right direction)
                  moveCandidates[:] = filterfalse(lambda candidate : (candidate.offset(currentLocation)[0],candidate.offset(currentLocation)[1]) not in self._limitMovementPinnedPawn(attackerOffset), moveCandidates)
-        return moveCandidates
+        return self._getGlobalValidMoves(moveCandidates, board)
 
     def _limitMovementPinnedPawn(self, attackerOffset: Tuple[int,int]) -> Tuple[Tuple[int,int], Tuple[int,int]]:
         norm = (int(attackerOffset[0]/abs(attackerOffset[0])),int(attackerOffset[1]/abs(attackerOffset[1])))

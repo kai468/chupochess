@@ -2,6 +2,12 @@ from enum import Enum
 from typing import Tuple
 from typing_extensions import Self
 
+class GameState(Enum):
+    RUNNING = 0 
+    DRAW = 1
+    WHITE_WINS = 2
+    BLACK_WINS = 3
+
 class PieceColor(Enum):
     WHITE = 0
     BLACK = 1

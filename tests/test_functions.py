@@ -5,6 +5,8 @@
 
 from re import T
 
+from chupochess.common import PieceColor
+
 
 def test_pieceColor_Not():
     from chupochess.common import PieceColor
@@ -244,15 +246,15 @@ def test_King_inCheckDetection():
     kings[:] = filterfalse(lambda piece : (piece.name != "K"), board.getPieceList(PieceColor.BLACK))
     bKing = kings[0]
     assert bKing.name == "K"        
-    assert bKing.isInCheck(board) == False
+    assert len(bKing.isInCheck(board)) == 0
     # attack King with Knight from G1:
     makeMove("G1","F6")
-    assert bKing.isInCheck(board) == True
+    assert len(bKing.isInCheck(board)) == 1
     makeMove("F6","G1")
     makeMove("E7","E3")
-    assert bKing.isInCheck(board) == False
+    assert len(bKing.isInCheck(board)) == 0
     makeMove("D1", "E3")
-    assert bKing.isInCheck(board) == True
+    assert len(bKing.isInCheck(board)) == 1
 
 def test_board_whiteToMove():
     from chupochess.board import Board
@@ -330,8 +332,7 @@ def test_King_getCastlingRights():
 
 def test_Pawn_enPassant():
     from chupochess.board import Board
-    from chupochess.common import PieceColor, Location, File
-    from itertools import filterfalse
+    from chupochess.common import Location, File
     board = Board()
     files = [file.name for file in File]
     def makeMove(sFrom: str, sTo: str) -> None:
@@ -404,3 +405,130 @@ def test_possibleMoves_allPieces():
     assert countPossibleMoves() == (32, 59)
     makeMove("D4", "C5")
     assert countPossibleMoves() == (31, 55)
+
+
+def test_board_isInsufficientMaterial():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    
+    assert board._isInsufficientMaterial() == False
+    makeMove("A1", "A2")
+    makeMove("A2", "A7")
+    # remove all pawns: 
+    for i in range(7):
+        makeMove(File(i).name + "7", File(i + 1).name + "2")
+        makeMove(File(i + 1).name + "2", File(i + 1).name + "7")
+    # --> white rook from A1 is now on H7, no pawns left, everything else is in starting position
+    assert board._isInsufficientMaterial() == False
+    makeMove("H7", "A8")
+    for i in range(3):      # remove (queenside) black knight, bishop and queen
+        makeMove(File(i).name + "8", File(i + 1).name + "8")
+    makeMove("D8", "F8")
+    makeMove("F8", "G8")
+    # --> black player only has king and rook left
+    assert board._isInsufficientMaterial() == False
+    assert len(board.blackPieces) == 2
+    
+    makeMove("G8", "H1")
+    makeMove("H1", "G1")
+    makeMove("G1", "F1")
+    makeMove("F1", "D1")
+    makeMove("D1", "C1")
+    assert board._isInsufficientMaterial() == False
+    makeMove("B1", "C1")
+    assert board._isInsufficientMaterial() == False
+    makeMove("H8", "D1")
+    makeMove("E1", "D1")
+    assert board._isInsufficientMaterial() == True
+    makeMove("C1", "F8")
+    makeMove("E8", "F8")
+    assert board._isInsufficientMaterial() == True
+    assert len(board.blackPieces) == 1
+    assert len(board.whitePieces) == 1
+    
+def test_board_updateGameState():
+    from chupochess.board import Board
+    from chupochess.common import Location, File, GameState
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    
+    assert board.gameState == GameState.RUNNING
+    board.whiteToMove = False
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    # checkmate: one piece attacking + no valid moves nowhere:
+    makeMove("D1", "F7")
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    makeMove("H1", "F3")
+    board.updateGameState()
+    assert board.gameState == GameState.WHITE_WINS
+    makeMove("F7", "D1")
+    board.gameState = GameState.RUNNING
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    # checkmate two pieces attacking + no valid moves:
+    makeMove("G8", "D3")
+    board.whiteToMove = True
+    assert board.gameState == GameState.RUNNING
+    makeMove("A8", "E2")
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    makeMove("E2", "E3")
+    board.updateGameState()
+    assert board.gameState == GameState.BLACK_WINS
+    # remove white pawns:
+    makeMove("E3", "A2")
+    for i in range(7):
+        makeMove(File(i).name + "2", File(i + 1).name + "2")
+    makeMove("E1", "E2")        # white king now on E2
+    # remove all other white pieces:
+    makeMove("H2", "A1")
+    for i in range(7):
+        makeMove(File(i).name + "1", File(i + 1).name + "1")
+    makeMove("E2", "E1")        # white king on E1 again
+    makeMove("H1", "F3")
+    makeMove("F3", "H6")
+    # stalemate
+    board.gameState = GameState.RUNNING
+    board.whiteToMove = True
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    makeMove("D8", "D3")
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    makeMove("H6", "F6")
+    board.updateGameState()
+    assert board.gameState == GameState.DRAW
+    # remove all pieces but black rook on H8 with black horse (B2):
+    makeMove("B8", "A1")
+    src = "A1"
+    for row in range(8):
+        for col in range(8):
+            tar = File(col).name + str(row + 1)
+            if tar in ["A1", "E1", "E8", "H8"]:
+                continue
+            makeMove(src, tar)
+            src = tar
+    assert len(board.blackPieces) == 3
+    assert len(board.whitePieces) == 1
+    board.gameState = GameState.RUNNING
+    board.updateGameState()
+    assert board.gameState == GameState.RUNNING
+    # insufficient material:
+    makeMove("G8","H8")         # get rid of black rook
+    board.updateGameState()
+    assert board.gameState == GameState.DRAW
+    

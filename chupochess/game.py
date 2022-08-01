@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from chupochess.board import Board
-from chupochess.common import File, Location, PieceColor
+from chupochess.common import File, Location, PieceColor, GameState
 
 import pygame as p
 import sys
@@ -25,7 +25,7 @@ class Game:
 
         validMoves = None
 
-        while True:
+        while board.gameState == GameState.RUNNING:
             board.printBoard(validMoves)
             #input format: A2->A3
             move = input()   
@@ -54,7 +54,6 @@ class Game:
                 validMoves = None
 
     def main(self) -> None:
-        # TODO: GUI
         # pygame with chess inspiration: https://github.com/mikolaj-skrzypczak/chess-engine/blob/master/chess/ChessMain.py
         p.init()
         board = Board()
@@ -64,11 +63,10 @@ class Game:
 
         self._loadImages()
 
-        running = True
         squareSelected = None
         highlightedSquares = []         # contains Tuples (Position, p.Color)
 
-        while running:
+        while board.gameState == GameState.RUNNING:
 
             self._drawBoard(screen)
             self._drawPieces(screen, board)
@@ -101,6 +99,13 @@ class Game:
                         highlightedSquares.clear()
             clock.tick(self.MAX_FPS)
             p.display.flip()
+
+        # TODO: display according to GameState:
+        textObj = p.font.SysFont("Helvetica", 28, True, False).render("Game Over", False, p.Color(100,100,100))
+        textLocation = p.Rect(0,0,self.WIDTH, self.HEIGHT).move(self.WIDTH / 2 - textObj.get_width() / 2,
+                                                                self.HEIGHT / 2 - textObj.get_height() / 2)
+        screen.blit(textObj, textLocation)
+
 
     def _getLocation(self, position: Tuple[int,int]) -> Location:
         # TODO: atm, only for white perspective
