@@ -25,7 +25,7 @@ class Board:
                     piece = pieces[newSquare.location]
                     newSquare.isOccupied = True
                     newSquare.currentPiece = piece
-                    piece.currentSquare = newSquare         # TODO: for bishop and rook lying "under" the queen/king, there is no square set (and therefore no location)
+                    piece.currentSquare = newSquare  
                     if piece.color == PieceColor.BLACK:
                         self.blackPieces.append(piece)
                     else:
@@ -43,6 +43,7 @@ class Board:
         return s
 
     def printBoard(self, validMoves:List[Location]=None) -> None:
+        # debugging only
         ASCII_CLR_YELLOW = '\033[93m'
         ASCII_CLR_RED = '\033[91m'
         ASCII_CLR_RESET = '\033[0m'
@@ -85,6 +86,14 @@ class Board:
         elif piece.color == PieceColor.WHITE:
             self.whitePieces.remove(piece)
 
+    def getSetup(self) -> dict:
+        # only temporary, for HTML online GUI:
+        setup = {}
+        for piece in self.whitePieces:
+            setup[str(piece.currentSquare.location)] = "w" + piece.name
+        for piece in self.blackPieces:
+            setup[str(piece.currentSquare.location)] = "b" + piece.name
+        return setup
             
 
 
