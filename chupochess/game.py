@@ -66,7 +66,7 @@ class Game:
         squareSelected = None
         highlightedSquares = []         # contains Tuples (Position, p.Color)
 
-        while board.gameState == GameState.RUNNING:
+        while True:
 
             self._drawBoard(screen)
             self._drawPieces(screen, board)
@@ -97,14 +97,15 @@ class Game:
                     else:
                         squareSelected = None
                         highlightedSquares.clear()
+            board.updateGameState()
+            # TODO: display according to GameState:
+            if board.gameState != GameState.RUNNING:
+                self._drawGameOver(screen, board.gameState)
+
+
             clock.tick(self.MAX_FPS)
             p.display.flip()
 
-        # TODO: display according to GameState:
-        textObj = p.font.SysFont("Helvetica", 28, True, False).render("Game Over", False, p.Color(100,100,100))
-        textLocation = p.Rect(0,0,self.WIDTH, self.HEIGHT).move(self.WIDTH / 2 - textObj.get_width() / 2,
-                                                                self.HEIGHT / 2 - textObj.get_height() / 2)
-        screen.blit(textObj, textLocation)
 
 
     def _getLocation(self, position: Tuple[int,int]) -> Location:
@@ -120,6 +121,18 @@ class Game:
         names = ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"]
         for name in names:
             self.IMAGES[name] = p.transform.scale(p.image.load("static/img/" + name + ".png"), (0.8*self.SQ_SIZE, 0.8*self.SQ_SIZE))
+
+    def _drawGameOver(self, screen, gameState: GameState) -> None:
+        if gameState == GameState.DRAW:
+            text = "Game Over: Draw"
+        elif gameState == GameState.BLACK_WINS:
+            text = "Game Over: Black wins!"
+        elif gameState == GameState.WHITE_WINS:
+            text = "Game Over: White wins!"
+        font = p.font.SysFont("Helvetica", 28, True, False)
+        textObj = font.render(text, False, p.Color(60,60,60))
+        textLocation = p.Rect(0,0, self.WIDTH, self.HEIGHT).move(self.WIDTH / 2 - textObj.get_width() / 2, self.HEIGHT / 2 - textObj.get_height() / 2)
+        screen.blit(textObj, textLocation)
 
     def _drawBoard(self, screen: p.Surface) -> None:
         global colors

@@ -534,7 +534,7 @@ class Pawn(Piece,MovableInterface):
         board.updatePieceList(self.currentSquare.reset())
         if targetSquare.isOccupied: 
             board.updatePieceList(targetSquare.reset())     # make capture if there is sth to capture
-        promotedPiece = Queen(self.color)
+        promotedPiece = cls(self.color)
         promotedPiece.currentSquare = targetSquare
         targetSquare.currentPiece = promotedPiece
         targetSquare.isOccupied = True
