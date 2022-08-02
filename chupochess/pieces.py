@@ -149,6 +149,7 @@ class King(Piece, MovableInterface):
                 # long castle -> rook has to be moved from file A to D
                 rooks[:] = filterfalse(lambda piece : (piece.name != "R") or (piece.currentSquare.location != Location(self.currentSquare.location.rank, File.A)), rooks)
                 rooks[0].makeMove(board.locationSquareMap[Location(self.currentSquare.location.rank, File.D)], board)
+            board.whiteToMove = not board.whiteToMove      
         self.isFirstMove = False
         self._switchSquaresAndCapture(square, board)
 
@@ -531,6 +532,8 @@ class Pawn(Piece,MovableInterface):
     def _promotePawn(self, targetSquare: Square, board: Board, cls: Piece = Queen):
         # TODO: interface for really choosing the cls -> e.g. promoting to a Knight, too
         board.updatePieceList(self.currentSquare.reset())
+        if targetSquare.isOccupied: 
+            board.updatePieceList(targetSquare.reset())     # make capture if there is sth to capture
         promotedPiece = Queen(self.color)
         promotedPiece.currentSquare = targetSquare
         targetSquare.currentPiece = promotedPiece
