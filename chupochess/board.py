@@ -73,6 +73,12 @@ class Board:
             return self.blackPieces.copy()
         else:
             return self.whitePieces.copy()
+    
+    def appendPieceList(self, piece: object):
+        if piece.color == PieceColor.WHITE:
+            self.whitePieces.append(piece)
+        else:
+            self.blackPieces.append(piece)
 
     def getKingLocation(self, color: PieceColor) -> Location:
         if color == PieceColor.BLACK:

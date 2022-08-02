@@ -95,7 +95,7 @@ class Piece:
                 for move in moves:
                     if (board.locationSquareMap[move].isOccupied == False):
                         offset = king.currentSquare.location.offset(move)
-                        if (abs(offset[0]) == abs(offset[1])) and (abs(offset[0]) < abs(attackerOffset[0])) and ((offset[0]>0)^(attackerOffset[0]>0)) and ((offset[1]>0)^(attackerOffset[1]>0)):
+                        if (abs(offset[0]) == abs(offset[1])) and (abs(offset[0]) < abs(attackerOffset[0])) and ((offset[0]>0)==(attackerOffset[0]>0)) and ((offset[1]>0)==(attackerOffset[1]>0)):
                             newMoves.append(move)
             return newMoves
 
@@ -121,9 +121,10 @@ class King(Piece, MovableInterface):
         moveCandidates.extend(self.getCastlingRights(board))
         # "in check" detection for move candidates: 
         locationsUnderAttack = []
-        # TODO: there must be a more efficient way to do the following
-        for opponentPiece in board.getPieceList(self.color.Not()):
-            locationsUnderAttack.extend(opponentPiece.getDefendedLocations(board))
+        for move in moveCandidates:
+            # check if target square is under attack
+            if len(self._locationUnderAttack(board, move)) > 0:
+                locationsUnderAttack.append(move)
         moveCandidates[:] = filterfalse(lambda candidate : candidate in locationsUnderAttack, moveCandidates)
         return moveCandidates
 
@@ -238,24 +239,24 @@ class King(Piece, MovableInterface):
         
     
     def isInCheck(self, board: Board) -> List[Location]: #returns locations of immediate attackers (0, 1 or 2)
-        # TODO: it would probably be more performant to use the same algorithm as in _castlingSquareUnderAttack
-        # + it's not only more performant, also the current algorithm does not support one edge case:
-        #   if e.g. queen and bishop or two rooks are aligned and both attacking the king from the same side,
-        #   it would be possible to block the attack without moving the king -> this should not be counted as a 2! 
+        # check whether King is under immediate attack:
+        return self._locationUnderAttack(board, self.currentSquare.location)
+
+    def _locationUnderAttack(self, board: Board, location: Location) -> List[Location]:
         # check whether King is under immediate attack:
         attackers = []
         squareMap = board.locationSquareMap
         # potential attacker: pawn 
         offsets = [(-1,1),(1,1)] if self.color == PieceColor.WHITE else [(-1,-1),(1,-1)]
         for offset in offsets:
-            attackerLocation = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            attackerLocation = LocationFactory.build(location, offset[0], offset[1])
             if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "P" and squareMap[attackerLocation].currentPiece.color != self.color:
                 attackers.append(attackerLocation)
 
         # potential attacker: knight -> offset: List[Tupel[file: int, rank: int]]
         offsets = [(-2,1),(-1,2),(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1)]    
         for offset in offsets:
-            attackerLocation = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            attackerLocation = LocationFactory.build(location, offset[0], offset[1])
             if attackerLocation in squareMap and squareMap[attackerLocation].isOccupied and squareMap[attackerLocation].currentPiece.name == "N" and squareMap[attackerLocation].currentPiece.color != self.color:
                 attackers.append(attackerLocation)
 
@@ -271,12 +272,17 @@ class King(Piece, MovableInterface):
             (-1,0,["R","Q"])
         ]
         for offset in offsets:
-            attackerLocation = LocationFactory.build(self.currentSquare.location, offset[0], offset[1])
+            attackerLocation = LocationFactory.build(location, offset[0], offset[1])
             while attackerLocation in squareMap:
                 if squareMap[attackerLocation].isOccupied:
                     if squareMap[attackerLocation].currentPiece.color != self.color and (squareMap[attackerLocation].currentPiece.name in offset[2]):
                         attackers.append(attackerLocation)
-                    break
+                        break
+                    elif squareMap[attackerLocation].currentPiece == self:
+                        # special case: since the king still is not in target position, it could be possible that an attacker is located behind the king
+                        pass
+                    else:
+                        break
                 attackerLocation = LocationFactory.build(attackerLocation, offset[0], offset[1])
         return attackers
 
@@ -525,14 +531,13 @@ class Pawn(Piece,MovableInterface):
     def _promotePawn(self, targetSquare: Square, board: Board, cls: Piece = Queen):
         # TODO: interface for really choosing the cls -> e.g. promoting to a Knight, too
         board.updatePieceList(self.currentSquare.reset())
-        promotedPiece = cls(self.color)
+        promotedPiece = Queen(self.color)
         promotedPiece.currentSquare = targetSquare
         targetSquare.currentPiece = promotedPiece
         targetSquare.isOccupied = True
         board.whiteToMove = not board.whiteToMove
-        board.whitePieces.append(promotedPiece)
+        board.appendPieceList(promotedPiece)
         
-
 
 class PieceFactory:
     def __init__(self) -> None:

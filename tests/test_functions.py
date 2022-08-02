@@ -531,4 +531,30 @@ def test_board_updateGameState():
     makeMove("G8","H8")         # get rid of black rook
     board.updateGameState()
     assert board.gameState == GameState.DRAW
+
+def test_Piece_getGlobalValidMoves():
+    from chupochess.board import Board
+    from chupochess.common import Location, File
+    board = Board()
+    files = [file.name for file in File]
+    def makeMove(sFrom: str, sTo: str) -> None:
+        # input format: sFrom/sTo = "A8"
+        fromSquare = board.locationSquareMap[Location(int(sFrom[1]) - 1, File(files.index(sFrom[0])))]
+        toSquare = board.locationSquareMap[Location(int(sTo[1]) - 1, File(files.index(sTo[0])))]
+        fromSquare.currentPiece.makeMove(toSquare, board)
+    def blackPossibleMoves() -> int:
+        cntMoves = 0
+        for piece in board.blackPieces:
+            cntMoves += len(piece.getValidMoves(board))
+        return cntMoves
+
+    prepMoves = [("E2","E4"), ("F7","F5"), ("E4", "F5"),("E7","E5"),("F5", "E6"), ("D7", "E6")]
+    for move in prepMoves:
+        makeMove(move[0], move[1])
+    assert len(board.blackPieces) == 14
+    assert len(board.whitePieces) == 15
+    assert blackPossibleMoves() == 36
+    makeMove("F1", "B5")
+    assert len(board.blackPieces) == 14
+    assert blackPossibleMoves() == 7
     
