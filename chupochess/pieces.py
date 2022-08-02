@@ -88,7 +88,7 @@ class Piece:
                 # attacker rook/queen in same file / rank -> legal moves only differ in one index:
                 relevantIndex = 0 if attackerOffset[1] == 0 else 1
                 for move in moves:
-                    if (board.locationSquareMap[move].isOccupied == False) and ((king.currentSquare.location.offset(move)[relevantIndex]>0)^(inCheck[0].offset(move)[relevantIndex]>0)):
+                    if (board.locationSquareMap[move].isOccupied == False) and ((king.currentSquare.location.offset(move)[relevantIndex]>0)^(inCheck[0].offset(move)[relevantIndex]>0)) and (king.currentSquare.location.offset(move)[int(not bool(relevantIndex))] == 0):
                         newMoves.append(move)
             else:
                 #attacker bishop/queen in same diagonal -> legal moves
