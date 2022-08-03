@@ -16,9 +16,6 @@ class Game:
         self.CLR_DARK_SQ = p.Color(150,180,0)
         self.CLR_LIGHT_SQ = p.Color(240,240,200)
     def uglyMain(self) -> None:
-        # TODO: checkmate detection + draw detection
-        # -> maybe use the defended locations in case of a check with no possible king movements -> see if the 
-        #   attacked path can be blocked or the attacker can be captured (if only one attacker) 
         board = Board()
 
         files = [file.name for file in File]
@@ -98,15 +95,12 @@ class Game:
                         squareSelected = None
                         highlightedSquares.clear()
             board.updateGameState()
-            # TODO: display according to GameState:
+            
             if board.gameState != GameState.RUNNING:
                 self._drawGameOver(screen, board.gameState)
 
-
             clock.tick(self.MAX_FPS)
             p.display.flip()
-
-
 
     def _getLocation(self, position: Tuple[int,int]) -> Location:
         # TODO: atm, only for white perspective

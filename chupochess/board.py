@@ -13,8 +13,6 @@ class Board:
         self.whiteKingLocation = Location(0, File.E)
         self.blackKingLocation = Location(7, File.E)
         self.whiteToMove = True
-        self.pins = []
-        self.checks = []
         pieces = PieceFactory.getPieces()
         self.gameState = GameState.RUNNING
         for file in range(8):
@@ -145,12 +143,7 @@ class Board:
         
 
 
-                
-
-
-# TODO: checkmate detection + draw detection
-# -> maybe use the defended locations in case of a check with no possible king movements -> see if the 
-#   attacked path can be blocked or the attacker can be captured (if only one attacker) 
+            
 
 
 

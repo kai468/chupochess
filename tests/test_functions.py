@@ -1,12 +1,4 @@
-
 # run all tests via command line with command "python setup.py pytest" in home folder
-
-
-
-from re import T
-
-from chupochess.common import PieceColor
-
 
 def test_pieceColor_Not():
     from chupochess.common import PieceColor
@@ -227,8 +219,6 @@ def test_Pawn_isPinnedBy_Bishop():
     assert pawn.isPinnedBy(board).name == "B"
     assert len(pawn.getValidMoves(board)) == 1
     
-
-
 def test_King_inCheckDetection():
     from chupochess.board import Board
     from chupochess.common import PieceColor, Location, File
@@ -272,7 +262,6 @@ def test_board_whiteToMove():
     assert board.whiteToMove == False
     makeMove("E7", "E5")
     assert board.whiteToMove == True
-
 
 def test_King_getCastlingRights():
     from chupochess.board import Board
@@ -367,7 +356,6 @@ def test_Pawn_enPassant():
     assert len(board.whitePieces) == 15
     assert len(board.blackPieces) == 15
 
-
 def test_possibleMoves_allPieces():
     from typing import Tuple
     from chupochess.board import Board
@@ -405,7 +393,6 @@ def test_possibleMoves_allPieces():
     assert countPossibleMoves() == (32, 59)
     makeMove("D4", "C5")
     assert countPossibleMoves() == (31, 55)
-
 
 def test_board_isInsufficientMaterial():
     from chupochess.board import Board

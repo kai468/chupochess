@@ -106,8 +106,7 @@ class King(Piece, MovableInterface):
         self.name = "K"
         self.bishop = Bishop(color)
         self.rook = Rook(color)
-        self.isFirstMove = True  
-        self.castlingRights = []           
+        self.isFirstMove = True         
 
     def getValidMoves(self, board: Board) -> List[Location]:
         moveCandidates = []
@@ -193,7 +192,6 @@ class King(Piece, MovableInterface):
         # no castling if king is in check:
         if len(self.isInCheck(board)) > 0:
             castlingRights.clear()
-        self.castlingRights = castlingRights
         return castlingRights
 
     def _castlingSquareUnderAttack(self, fileOffset: int, board: Board) -> bool:
@@ -443,7 +441,6 @@ class Pawn(Piece,MovableInterface):
         Piece.__init__(self, color)
         self.name = "P"
         self.isFirstMove = True
-        self.enPassantPossible = False
 
     def getValidMoves(self, board: Board) -> List[Location]:
         rankOffset = 1 if self.color == PieceColor.WHITE else -1
@@ -506,7 +503,6 @@ class Pawn(Piece,MovableInterface):
         if self.isFirstMove:
             self.isFirstMove = False
             if abs(self.currentSquare.location.rank - square.location.rank) > 1:
-                self.enPassantPossible = True
                 board.enPassantPossible.clear()
                 board.enPassantPossible.append(self)        
         # capture other pawn if en passant move:
